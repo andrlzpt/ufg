@@ -11,6 +11,13 @@ type State struct {
 	DeltaTime           float64
 	ElapsedTime         float64
 	FrameCount          uint64
+	MoveUp              bool
+	MoveDown            bool
+	MenuUpPressed       bool
+	MenuDownPressed     bool
+	ConfirmPressed      bool
+	MousePressed        bool
+	MouseMoved          bool
 }
 
 type Config struct {
@@ -37,16 +44,41 @@ func Run(config Config, loop Loop) {
 	window.SetCursorEnterCallback(func(w *glfw.Window, entered bool) {
 		state.IsMouseInsideWindow = entered
 	})
+
+	var previousUp, previousDown, previousConfirm, previousMouse bool
 	lastTime := glfw.GetTime()
+
 	for !window.ShouldClose() {
 		currentTime := glfw.GetTime()
 		state.DeltaTime = currentTime - lastTime
 		state.ElapsedTime = currentTime
 		state.FrameCount++
 		lastTime = currentTime
+
 		x, y := window.GetCursorPos()
+
+		state.MouseMoved = x != state.MouseX || y != state.MouseY
+
 		state.MouseX = x
 		state.MouseY = y
+
+		up := window.GetKey(glfw.KeyUp) == glfw.Press
+		down := window.GetKey(glfw.KeyDown) == glfw.Press
+		confirm := window.GetKey(glfw.KeyEnter) == glfw.Press
+		mouse := window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
+
+		state.MenuUpPressed = up && !previousUp
+		state.MenuDownPressed = down && !previousDown
+		state.ConfirmPressed = confirm && !previousConfirm
+		state.MousePressed = mouse && !previousMouse
+
+		previousUp = up
+		previousDown = down
+		previousConfirm = confirm
+		previousMouse = mouse
+
+		state.MoveUp = window.GetKey(glfw.KeyW) == glfw.Press
+		state.MoveDown = window.GetKey(glfw.KeyS) == glfw.Press
 		loop(&state)
 		window.SwapBuffers()
 		glfw.PollEvents()
