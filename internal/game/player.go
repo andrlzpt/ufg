@@ -17,3 +17,9 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 	p.Y += direction * p.Speed * deltaTime
 	p.Y = max(minY, min(maxY, p.Y))
 }
+
+// Update applies this frame's input.
+// Punching and steering will be implemented in later steps.
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
+	p.Move(input.MoveY, deltaTime, minY, maxY)
+}
