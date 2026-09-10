@@ -65,14 +65,18 @@ func main() {
 	app := AppState{
 		Screen: ScreenMain,
 		Left: game.Player{
-			X:     playerPadding,
-			Y:     playerY,
-			Speed: 40,
+			X:          playerPadding,
+			Y:          playerY,
+			Speed:      40,
+			Facing:     game.FacingRight,
+			ArmControl: game.ArmControlLastPressed,
 		},
 		Right: game.Player{
-			X:     float64(blocks.Width - playerPadding - ascii.PlayerWidth),
-			Y:     playerY,
-			Speed: 40,
+			X:          float64(blocks.Width - playerPadding - ascii.PlayerWidth),
+			Y:          playerY,
+			Speed:      40,
+			Facing:     game.FacingLeft,
+			ArmControl: game.ArmControlLastPressed,
 		},
 	}
 
@@ -117,8 +121,9 @@ func main() {
 				app.Right.Update(rightInput, state.DeltaTime, minY, maxY)
 			}
 
-			ascii.DrawPlayer(blocks, int(app.Left.X), int(app.Left.Y), ascii.FacingRight, false)
-			ascii.DrawPlayer(blocks, int(app.Right.X), int(app.Right.Y), ascii.FacingLeft, true)
+			drawPlayer(blocks, &app.Left, false)
+			drawPlayer(blocks, &app.Right, true)
+
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
 			drawMenu(text, app.MenuItem)

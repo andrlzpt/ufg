@@ -20,26 +20,21 @@ func readKeyboard(w *glfw.Window) Controls {
 
 	if w.GetKey(glfw.KeyW) == glfw.Press {
 		controls.MoveY--
+		controls.SteerY--
 	}
 	if w.GetKey(glfw.KeyS) == glfw.Press {
 		controls.MoveY++
+		controls.SteerY++
 	}
-	if w.GetKey(glfw.KeyLeft) == glfw.Press {
+	if w.GetKey(glfw.KeyA) == glfw.Press {
 		controls.SteerX--
 	}
-	if w.GetKey(glfw.KeyRight) == glfw.Press {
+	if w.GetKey(glfw.KeyD) == glfw.Press {
 		controls.SteerX++
-	}
-	if w.GetKey(glfw.KeyUp) == glfw.Press {
-		controls.SteerY--
-	}
-	if w.GetKey(glfw.KeyDown) == glfw.Press {
-		controls.SteerY++
 	}
 
 	controls.LeftPunch = w.GetKey(glfw.KeyJ) == glfw.Press
 	controls.RightPunch = w.GetKey(glfw.KeyK) == glfw.Press
-
 	return controls
 }
 
