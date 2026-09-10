@@ -114,11 +114,12 @@ func main() {
 					"connect player two controller")
 			} else {
 				app.Left.Update(leftInput, state.DeltaTime, minY, maxY)
-				app.Right.Update(rightInput, state.DeltaTime, minY, maxY)
+				app.Right.Move(rightInput.MoveY, state.DeltaTime, minY, maxY)
 			}
 
-			ascii.DrawPlayer(blocks, int(app.Left.X), int(app.Left.Y), ascii.FacingRight, false)
-			ascii.DrawPlayer(blocks, int(app.Right.X), int(app.Right.Y), ascii.FacingLeft, true)
+			drawLeftPlayer(blocks, &app.Left)
+
+			ascii.DrawPlayer(blocks, int(app.Right.X), int(app.Right.Y), ascii.FacingLeft, true, false, false)
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
 			drawMenu(text, app.MenuItem)
