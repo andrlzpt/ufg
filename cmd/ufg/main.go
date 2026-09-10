@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/andrlzpt/ufg/internal/ascii"
+	"github.com/andrlzpt/ufg/internal/game"
 	"github.com/andrlzpt/ufg/internal/renderer"
 	"github.com/andrlzpt/ufg/internal/terminal"
 	"github.com/andrlzpt/ufg/internal/window"
@@ -28,8 +29,19 @@ const (
 	ScreenArena Screen = "arena"
 )
 
+type Mode int
+
+const (
+	ModeOnePlayer Mode = iota
+	ModeTwoPlayers
+)
+
 type AppState struct {
-	Screen Screen
+	Screen   Screen
+	Mode     Mode
+	MenuItem int
+	Left     game.Player
+	Right    game.Player
 }
 
 func main() {
@@ -58,6 +70,9 @@ func main() {
 		Width: windowWidth, Height: windowHeight, Title: "untitled fighting game",
 	}, func(_ *window.State) {
 		handleCommands(commands, &app)
+		if app.Screen == ScreenMain {
+			handleMenu(state, &app, text)
+		}
 		blocks.Clear()
 		text.Clear()
 		if app.Screen == ScreenArena {
@@ -66,8 +81,7 @@ func main() {
 			drawCenteredText(text, text.Height/2, "type: go main to get back")
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
-			drawCenteredText(text, text.Height/2-1, "untitled fighting game.")
-			drawCenteredText(text, text.Height/2, "type 'go arena' to enter the arena")
+			drawMenu(text, app.MenuItem)
 		}
 		renderer.BeginFrame(windowWidth, windowHeight)
 		renderer.RenderBlocks(blocks, blockConfig)
