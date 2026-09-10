@@ -11,8 +11,8 @@ type State struct {
 	DeltaTime           float64
 	ElapsedTime         float64
 	FrameCount          uint64
-	MoveUp              bool
-	MoveDown            bool
+	Keyboard            Controls
+	Controller          Controller
 	MenuUpPressed       bool
 	MenuDownPressed     bool
 	ConfirmPressed      bool
@@ -77,8 +77,8 @@ func Run(config Config, loop Loop) {
 		previousConfirm = confirm
 		previousMouse = mouse
 
-		state.MoveUp = window.GetKey(glfw.KeyW) == glfw.Press
-		state.MoveDown = window.GetKey(glfw.KeyS) == glfw.Press
+		state.Keyboard = readKeyboard(window)
+		state.Controller = readController()
 		loop(&state)
 		window.SwapBuffers()
 		glfw.PollEvents()
