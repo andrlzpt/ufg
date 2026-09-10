@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/andrlzpt/ufg/internal/ascii"
+	"github.com/andrlzpt/ufg/internal/game"
 	"github.com/andrlzpt/ufg/internal/renderer"
 	"github.com/andrlzpt/ufg/internal/terminal"
 	"github.com/andrlzpt/ufg/internal/window"
@@ -19,6 +20,8 @@ const (
 	blockCellHeight = 4
 	textCellWidth   = 14
 	textCellHeight  = 26
+	arenaDepth      = 14
+	playerPadding   = 15
 )
 
 type Screen string
@@ -30,6 +33,8 @@ const (
 
 type AppState struct {
 	Screen Screen
+	Left   game.Player
+	Right  game.Player
 }
 
 func main() {
@@ -45,7 +50,23 @@ func main() {
 	}
 	blocks := ascii.NewBuffer(windowWidth/blockCellWidth, windowHeight/blockCellHeight)
 	text := ascii.NewBuffer(windowWidth/textCellWidth, windowHeight/textCellHeight)
-	app := AppState{Screen: ScreenMain}
+
+	playerY := float64(blocks.Height-ascii.PlayerHeight) / 2
+
+	app := AppState{
+		Screen: ScreenMain,
+		Left: game.Player{
+			X:     playerPadding,
+			Y:     playerY,
+			Speed: 40,
+		},
+		Right: game.Player{
+			X:     float64(blocks.Width - playerPadding - ascii.PlayerWidth),
+			Y:     playerY,
+			Speed: 40,
+		},
+	}
+
 	commands := make(chan terminal.Command, 16)
 	fmt.Println("Type 'go arena' to enter the arena; 'go main' to return.")
 	go func() {
@@ -56,16 +77,29 @@ func main() {
 
 	window.Run(window.Config{
 		Width: windowWidth, Height: windowHeight, Title: "untitled fighting game",
-	}, func(_ *window.State) {
+	}, func(state *window.State) {
 		handleCommands(commands, &app)
 		blocks.Clear()
 		text.Clear()
 		if app.Screen == ScreenArena {
 			ascii.DrawBackground(blocks, 0, 0, blocks.Width, blocks.Height, ascii.BackgroundWood)
-			ascii.DrawArenaBorder(blocks, 0, 0, blocks.Width, blocks.Height, 14)
-			playerY := (blocks.Height - ascii.PlayerHeight) / 2
-			ascii.DrawPlayer(blocks, 25, playerY, ascii.FacingRight, false)
-			ascii.DrawPlayer(blocks, blocks.Width-25-ascii.PlayerWidth, playerY, ascii.FacingLeft, true)
+			ascii.DrawArenaBorder(blocks, 0, 0, blocks.Width, blocks.Height, arenaDepth)
+
+			direction := 0.0
+			if state.MoveUp {
+				direction--
+			}
+			if state.MoveDown {
+				direction++
+			}
+
+			minY := float64(arenaDepth + 1)
+			maxY := float64(blocks.Height - arenaDepth - 1 - ascii.PlayerHeight)
+
+			app.Left.Move(direction, state.DeltaTime, minY, maxY)
+
+			ascii.DrawPlayer(blocks, int(app.Left.X), int(app.Left.Y), ascii.FacingRight, false)
+			ascii.DrawPlayer(blocks, int(app.Right.X), int(app.Right.Y), ascii.FacingLeft, true)
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
 			drawCenteredText(text, text.Height/2-1, "untitled fighting game.")
