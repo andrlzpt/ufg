@@ -63,7 +63,9 @@ func main() {
 		if app.Screen == ScreenArena {
 			ascii.DrawBackground(blocks, 0, 0, blocks.Width, blocks.Height, ascii.BackgroundWood)
 			ascii.DrawArenaBorder(blocks, 0, 0, blocks.Width, blocks.Height, 14)
-			ascii.DrawPlayer(blocks, 25, (blocks.Height-ascii.PlayerHeight)/2, ascii.FacingRight)
+			playerY := (blocks.Height - ascii.PlayerHeight) / 2
+			ascii.DrawPlayer(blocks, 25, playerY, ascii.FacingRight, false)
+			ascii.DrawPlayer(blocks, blocks.Width-25-ascii.PlayerWidth, playerY, ascii.FacingLeft, true)
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
 			drawCenteredText(text, text.Height/2-1, "untitled fighting game.")

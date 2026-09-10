@@ -32,11 +32,24 @@ var playerShape = [PlayerHeight]string{
 	"          @@@@ ",
 }
 
-func DrawPlayer(buffer *Buffer, x, y int, facing Facing) {
+func DrawPlayer(buffer *Buffer, x, y int, facing Facing, dark bool) {
 	for row, line := range playerShape {
 		for column, r := range line {
 			if r == ' ' {
 				continue
+			}
+
+			if dark {
+				switch r {
+				case '+':
+					r = '-'
+				case '#':
+					r = '='
+				case '%':
+					r = '+'
+				case '@':
+					r = '*'
+				}
 			}
 
 			offset := column
