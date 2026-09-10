@@ -71,15 +71,29 @@ func DrawPlayer(buffer *Buffer, x, y int, facing Facing, dark, upperGloveExtende
 	}
 }
 
-// DrawGlove draws the upper glove around its center.
-// Shape matches the resting upper glove.
-func DrawGlove(buffer *Buffer, x, y int, dark bool) {
+// DrawGlove rotates the resting glove to face dx,dy.
+// Direction must be a cardinal unit vector.
+func DrawGlove(buffer *Buffer, x, y, dx, dy int, dark bool) {
+	if !((dx == 0 && (dy == -1 || dy == 1)) ||
+		(dy == 0 && (dx == -1 || dx == 1))) {
+		return
+	}
+
 	r := rune('@')
 	if dark {
 		r = '*'
 	}
 
-	DrawHorizontalLine(buffer, x-1, y-1, 4, r)
-	DrawHorizontalLine(buffer, x-2, y, 5, r)
-	DrawHorizontalLine(buffer, x-1, y+1, 4, r)
+	for across := -1; across <= 1; across++ {
+		back := -1
+		if across == 0 {
+			back = -2
+		}
+
+		for forward := back; forward <= 2; forward++ {
+			column := x + forward*dx - across*dy
+			row := y + forward*dy + across*dx
+			buffer.Set(column, row, r)
+		}
+	}
 }

@@ -65,14 +65,18 @@ func main() {
 	app := AppState{
 		Screen: ScreenMain,
 		Left: game.Player{
-			X:     playerPadding,
-			Y:     playerY,
-			Speed: 40,
+			X:          playerPadding,
+			Y:          playerY,
+			Speed:      40,
+			Facing:     game.FacingRight,
+			ArmControl: game.ArmControlLastPressed,
 		},
 		Right: game.Player{
-			X:     float64(blocks.Width - playerPadding - ascii.PlayerWidth),
-			Y:     playerY,
-			Speed: 40,
+			X:          float64(blocks.Width - playerPadding - ascii.PlayerWidth),
+			Y:          playerY,
+			Speed:      40,
+			Facing:     game.FacingLeft,
+			ArmControl: game.ArmControlLastPressed,
 		},
 	}
 
@@ -114,12 +118,12 @@ func main() {
 					"connect player two controller")
 			} else {
 				app.Left.Update(leftInput, state.DeltaTime, minY, maxY)
-				app.Right.Move(rightInput.MoveY, state.DeltaTime, minY, maxY)
+				app.Right.Update(rightInput, state.DeltaTime, minY, maxY)
 			}
 
-			drawLeftPlayer(blocks, &app.Left)
+			drawPlayer(blocks, &app.Left, false)
+			drawPlayer(blocks, &app.Right, true)
 
-			ascii.DrawPlayer(blocks, int(app.Right.X), int(app.Right.Y), ascii.FacingLeft, true, false, false)
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
 			drawMenu(text, app.MenuItem)

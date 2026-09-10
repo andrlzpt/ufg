@@ -6,35 +6,123 @@ type Point struct {
 }
 
 type Arm struct {
-	Path     []Point
-	progress float64
+	Path       []Point
+	Retracting bool
+	direction  Direction
+	progress   float64
 }
 
-// Grow saves each visited cell, relative to the player's top-left.
-// The first point is the resting glove center.
-func (a *Arm) Grow(held bool, deltaTime float64, start Point) {
-	const (
-		speed     = 300.0 // Cells per second.
-		maxLength = 150   // Extension cells.
-	)
+const (
+	armSpeed     = 30.0 // Cells per second.
+	armMaxLength = 150  // Extension cells.
+)
 
-	if !held || deltaTime <= 0 {
+func (a *Arm) Start(start Point, direction Direction) {
+	a.Path = append(a.Path[:0], start)
+	a.Retracting = false
+	a.direction = direction
+	a.progress = 0
+}
+
+// Grow extends along the saved grid path.
+// No steering keeps the current direction. Direct reversal is ignored.
+func (a *Arm) Grow(input ArmInput, deltaTime float64) {
+	if !input.Held || a.Retracting || deltaTime <= 0 ||
+		len(a.Path) == 0 {
 		return
 	}
 
-	if len(a.Path) == 0 {
-		a.Path = append(a.Path, start)
-	}
+	a.progress += armSpeed * deltaTime
 
-	a.progress += speed * deltaTime
+	for a.progress >= 1 && len(a.Path)-1 < armMaxLength {
+		if canTurn(a.direction, input.Steer) {
+			a.direction = input.Steer
+		}
 
-	for a.progress >= 1 && len(a.Path)-1 < maxLength {
+		step := directionStep(a.direction)
 		tip := a.Path[len(a.Path)-1]
-		a.Path = append(a.Path, Point{X: tip.X + 1, Y: tip.Y})
+
+		a.Path = append(a.Path, Point{
+			X: tip.X + step.X,
+			Y: tip.Y + step.Y,
+		})
 		a.progress--
 	}
 
-	if len(a.Path)-1 >= maxLength {
+	if len(a.Path)-1 >= armMaxLength {
 		a.progress = 0
+	}
+}
+
+func (a *Arm) BeginRetract() {
+	if a.Retracting {
+		return
+	}
+
+	a.Retracting = true
+	a.progress = 0
+}
+
+// Retract removes points from the tip back toward the body.
+func (a *Arm) Retract(deltaTime float64) {
+	if !a.Retracting || deltaTime <= 0 {
+		return
+	}
+
+	a.progress += armSpeed * deltaTime
+
+	for a.progress >= 1 && len(a.Path) > 1 {
+		a.Path = a.Path[:len(a.Path)-1]
+		a.progress--
+	}
+
+	if len(a.Path) <= 1 {
+		a.Path = a.Path[:0]
+		a.Retracting = false
+		a.direction = DirectionRight
+		a.progress = 0
+	}
+}
+
+// TravelStep gives the glove's direction of travel.
+// During retraction, it faces the next point toward home.
+func (a *Arm) TravelStep() Point {
+	if a.Retracting && len(a.Path) > 1 {
+		tip := a.Path[len(a.Path)-1]
+		next := a.Path[len(a.Path)-2]
+		return Point{X: next.X - tip.X, Y: next.Y - tip.Y}
+	}
+
+	return directionStep(a.direction)
+}
+
+func canTurn(current, next Direction) bool {
+	if next == DirectionNone {
+		return false
+	}
+
+	currentStep := directionStep(current)
+	nextStep := directionStep(next)
+
+	if nextStep == (Point{}) {
+		return false
+	}
+
+	return nextStep.X != -currentStep.X ||
+		nextStep.Y != -currentStep.Y
+}
+
+func directionStep(direction Direction) Point {
+	switch direction {
+	case DirectionUp:
+		return Point{Y: -1}
+	case DirectionDown:
+		return Point{Y: 1}
+	case DirectionLeft:
+		return Point{X: -1}
+	case DirectionRight:
+		return Point{X: 1}
+	default:
+		return Point{}
 	}
 }
