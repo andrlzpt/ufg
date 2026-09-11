@@ -44,6 +44,7 @@ type AppState struct {
 	MenuItem int
 	Config   game.MatchConfig
 	Match    game.Match
+	Paused   bool
 }
 
 func main() {
@@ -83,21 +84,33 @@ func main() {
 		Width: windowWidth, Height: windowHeight, Title: "untitled fighting game",
 	}, func(state *window.State) {
 		handleCommands(commands, &app)
-		if app.Screen == ScreenMain {
-			handleMenu(state, &app, text)
-		}
+		menuFrame := handleMenus(state, &app, text)
+
 		blocks.Clear()
 		text.Clear()
-		if app.Screen == ScreenArena {
-			ascii.DrawBackground(blocks, 0, 0, blocks.Width, blocks.Height, ascii.BackgroundWood)
-			ascii.DrawArenaBorder(blocks, 0, 0, blocks.Width, blocks.Height, arenaDepth)
+
+		if app.Screen == ScreenMain {
+			ascii.DrawBorder(
+				blocks, 0, 0, blocks.Width, blocks.Height,
+				3, ascii.LineZigzag,
+			)
+			drawAppMenu(text, &app)
+		} else {
+			ascii.DrawBackground(
+				blocks, 0, 0, blocks.Width, blocks.Height,
+				ascii.BackgroundWood,
+			)
+			ascii.DrawArenaBorder(
+				blocks, 0, 0, blocks.Width, blocks.Height,
+				arenaDepth,
+			)
 
 			leftInput := playerInput(state.Keyboard)
 			rightInput := game.Input{}
 
-			paused := false
+			missingController := false
 			if app.Mode == ModeTwoPlayers {
-				paused = !state.Controller.Connected
+				missingController = !state.Controller.Connected
 				rightInput = playerInput(state.Controller.Controls)
 			}
 
@@ -110,26 +123,39 @@ func main() {
 
 			minY := float64(arena.MinY)
 			maxY := float64(arena.MaxY - ascii.PlayerHeight + 1)
-
 			match := &app.Match
 
-			if !match.Over() {
-				if paused {
-					drawCenteredText(text, text.Height/2,
-						"connect player two controller")
-				} else {
-					match.Update(leftInput, rightInput, state.DeltaTime, minY, maxY, arena)
+			if !menuFrame && !app.Paused &&
+				!match.Over() && !missingController {
+				match.Update(
+					leftInput, rightInput,
+					state.DeltaTime, minY, maxY, arena,
+				)
+
+				if match.Over() {
+					app.MenuItem = 0
 				}
 			}
 
 			drawPlayer(blocks, &match.Left, false)
 			drawPlayer(blocks, &match.Right, true)
-			drawMatchHUD(text, match)
 
-		} else {
-			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
-			drawMenu(text, app.MenuItem)
+			showMenu := app.Paused || match.Over()
+			drawMatchHUD(text, match, !showMenu)
+
+			if showMenu {
+				drawAppMenu(text, &app)
+			} else {
+				if missingController {
+					drawCenteredText(
+						text, 5,
+						"connect player two controller",
+					)
+				}
+				drawCenteredText(text, text.Height-2, "esc: pause")
+			}
 		}
+
 		renderer.BeginFrame(windowWidth, windowHeight)
 		renderer.RenderBlocks(blocks, blockConfig)
 		renderer.RenderText(text, textConfig)
@@ -159,7 +185,7 @@ func handleCommand(command terminal.Command, app *AppState) {
 	if len(fields) == 2 && fields[0] == "go" {
 		switch fields[1] {
 		case "main":
-			app.Screen = ScreenMain
+			returnToMain(app)
 			return
 		case "arena":
 			startMatch(app)

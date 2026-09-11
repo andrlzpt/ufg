@@ -18,6 +18,7 @@ type State struct {
 	ConfirmPressed      bool
 	MousePressed        bool
 	MouseMoved          bool
+	PausePressed        bool
 }
 
 type Config struct {
@@ -45,7 +46,7 @@ func Run(config Config, loop Loop) {
 		state.IsMouseInsideWindow = entered
 	})
 
-	var previousUp, previousDown, previousConfirm, previousMouse bool
+	var previousUp, previousDown, previousConfirm, previousMouse, previousPause bool
 	lastTime := glfw.GetTime()
 
 	for !window.ShouldClose() {
@@ -66,16 +67,19 @@ func Run(config Config, loop Loop) {
 		down := window.GetKey(glfw.KeyDown) == glfw.Press
 		confirm := window.GetKey(glfw.KeyEnter) == glfw.Press
 		mouse := window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
+		pause := window.GetKey(glfw.KeyEscape) == glfw.Press
 
 		state.MenuUpPressed = up && !previousUp
 		state.MenuDownPressed = down && !previousDown
 		state.ConfirmPressed = confirm && !previousConfirm
 		state.MousePressed = mouse && !previousMouse
+		state.PausePressed = pause && !previousPause
 
 		previousUp = up
 		previousDown = down
 		previousConfirm = confirm
 		previousMouse = mouse
+		previousPause = pause
 
 		state.Keyboard = readKeyboard(window)
 		state.Controller = readController()
