@@ -55,7 +55,7 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
-func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player) {
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player, config MatchConfig) {
 	if deltaTime <= 0 || p.MatchOver(opponent) {
 		return
 	}
@@ -100,10 +100,10 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds
 		arm := p.arm(id)
 
 		if arm.Retracting {
-			arm.Retract(deltaTime)
+			arm.Retract(deltaTime, config.RetractSpeed())
 		} else if p.canControl(id, inputs) {
 			if p.ArmControl == ArmControlSimultaneous || id == p.activeArm {
-				arm.Grow(inputs[id], deltaTime, armBounds, func(next, step Point) bool {
+				arm.Grow(inputs[id], deltaTime, config.ArmSpeed, armBounds, func(next, step Point) bool {
 					return p.resolveArmHit(arm, opponent, next, step)
 				})
 

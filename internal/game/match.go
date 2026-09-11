@@ -3,9 +3,11 @@ package game
 import "math"
 
 type MatchConfig struct {
-	Rounds        int
-	RoundDuration float64 // Seconds.
-	RoundBreak    float64 // Seconds between rounds; zero skips break.
+	Rounds          int
+	RoundDuration   float64 // Seconds.
+	RoundBreak      float64 // Seconds between rounds; zero skips break.
+	ArmSpeed        float64 // Cell per second.
+	RetractSpeedMul float64 // Retraction speed multiplier
 }
 
 type MatchResult int
@@ -26,6 +28,7 @@ type Match struct {
 	Result         MatchResult
 	Knockout       bool
 	BreakRemaining float64
+	Machine        *Machine
 
 	spawn [2]struct {
 		X float64
@@ -50,6 +53,18 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 		config.RoundBreak = 5
 	}
 
+	if config.ArmSpeed <= 0 ||
+		math.IsNaN(config.ArmSpeed) ||
+		math.IsInf(config.ArmSpeed, 0) {
+		config.ArmSpeed = 30
+	}
+
+	if config.RetractSpeedMul <= 0 ||
+		math.IsNaN(config.RetractSpeedMul) ||
+		math.IsInf(config.RetractSpeedMul, 0) {
+		config.RetractSpeedMul = 1.5
+	}
+
 	m := Match{
 		Config:    config,
 		Left:      left,
@@ -66,6 +81,10 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 	m.resetPlayers(Input{}, Input{})
 
 	return m
+}
+
+func (c MatchConfig) RetractSpeed() float64 {
+	return c.ArmSpeed * c.RetractSpeedMul
 }
 
 func (m *Match) Over() bool {
@@ -88,9 +107,13 @@ func (m *Match) Update(
 		return
 	}
 
-	// Small steps prevent a long frame from updating one player
-	// far ahead of the other. Never simulate past the round bell.
-	const maxStep = 1.0 / 120.0
+	// At most half a cell of arm travel per simulation step.
+	// Faster arms therefore get more frequent steering decisions.
+	maxStep := min(
+		1.0/120.0,
+		0.5/m.Config.ArmSpeed,
+		0.5/m.Config.RetractSpeed(),
+	)
 
 	for deltaTime > 0 && !m.Over() {
 
@@ -109,11 +132,19 @@ func (m *Match) Update(
 
 		step := min(deltaTime, maxStep, m.Remaining)
 
+		if m.Machine != nil {
+			rightInput = m.Machine.Next(
+				&m.Right, &m.Left,
+				step, minY, maxY, arena,
+				m.Config,
+			)
+		}
+
 		m.Left.Update(
-			leftInput, step, minY, maxY, arena, &m.Right,
+			leftInput, step, minY, maxY, arena, &m.Right, m.Config,
 		)
 		m.Right.Update(
-			rightInput, step, minY, maxY, arena, &m.Left,
+			rightInput, step, minY, maxY, arena, &m.Left, m.Config,
 		)
 
 		m.Remaining = max(0, m.Remaining-step)
@@ -170,6 +201,11 @@ func (m *Match) finishPoints() {
 // resetPlayers preserves scores and player settings.
 // Held punch buttons must be released before punching again.
 func (m *Match) resetPlayers(leftInput, rightInput Input) {
+	if m.Machine != nil {
+		m.Machine.Reset()
+		rightInput = Input{}
+	}
+
 	players := [2]*Player{&m.Left, &m.Right}
 	inputs := [2]Input{leftInput, rightInput}
 

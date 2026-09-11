@@ -10,16 +10,15 @@ type Point struct {
 type Arm struct {
 	Path       []Point
 	Retracting bool
+	PunchID    uint64
+
 	direction  Direction
 	progress   float64
 	scoredArms [2]bool
 }
 
-const (
-	armSpeed = 30.0 // Cells per second.
-)
-
 func (a *Arm) Start(start Point, direction Direction) {
+	a.PunchID++
 	a.Path = append(a.Path[:0], start)
 	a.Retracting = false
 	a.direction = direction
@@ -29,13 +28,13 @@ func (a *Arm) Start(start Point, direction Direction) {
 
 // Grow extends along the saved grid path.
 // No steering keeps the current direction. Direct reversal is ignored.
-func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds, resolveHit func(next, step Point) bool) {
+func (a *Arm) Grow(input ArmInput, deltaTime, speed float64, bounds Bounds, resolveHit func(next, step Point) bool) {
 	if !input.Held || a.Retracting || deltaTime <= 0 ||
 		len(a.Path) == 0 {
 		return
 	}
 
-	a.progress += armSpeed * deltaTime
+	a.progress += speed * deltaTime
 
 	for a.progress >= 1 {
 		direction := a.direction
@@ -88,12 +87,12 @@ func (a *Arm) BeginRetract() {
 }
 
 // Retract removes points from the tip back toward the body.
-func (a *Arm) Retract(deltaTime float64) {
+func (a *Arm) Retract(deltaTime, speed float64) {
 	if !a.Retracting || deltaTime <= 0 {
 		return
 	}
 
-	a.progress += armSpeed * deltaTime
+	a.progress += speed * deltaTime
 
 	for a.progress >= 1 && len(a.Path) > 1 {
 		a.Path = a.Path[:len(a.Path)-1]
