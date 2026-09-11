@@ -68,6 +68,6 @@ func handleMenu(state *window.State, app *AppState, text *ascii.Buffer) {
 
 	if state.ConfirmPressed || (state.MousePressed && hovered >= 0) {
 		app.Mode = menuOptions[app.MenuItem].Mode
-		app.Screen = ScreenArena
+		startMatch(app)
 	}
 }

@@ -106,6 +106,10 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds
 				arm.Grow(inputs[id], deltaTime, armBounds, func(next, step Point) bool {
 					return p.resolveArmHit(arm, opponent, next, step)
 				})
+
+				if p.MatchOver(opponent) {
+					return
+				}
 			}
 		}
 	}

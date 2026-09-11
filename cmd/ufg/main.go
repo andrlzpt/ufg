@@ -42,8 +42,8 @@ type AppState struct {
 	Screen   Screen
 	Mode     Mode
 	MenuItem int
-	Left     game.Player
-	Right    game.Player
+	Config   game.MatchConfig
+	Match    game.Match
 }
 
 func main() {
@@ -60,23 +60,11 @@ func main() {
 	blocks := ascii.NewBuffer(windowWidth/blockCellWidth, windowHeight/blockCellHeight)
 	text := ascii.NewBuffer(windowWidth/textCellWidth, windowHeight/textCellHeight)
 
-	playerY := float64(blocks.Height-ascii.PlayerHeight) / 2
-
 	app := AppState{
 		Screen: ScreenMain,
-		Left: game.Player{
-			X:          playerPadding,
-			Y:          playerY,
-			Speed:      40,
-			Facing:     game.FacingRight,
-			ArmControl: game.ArmControlLastPressed,
-		},
-		Right: game.Player{
-			X:          float64(blocks.Width - playerPadding - ascii.PlayerWidth),
-			Y:          playerY,
-			Speed:      40,
-			Facing:     game.FacingLeft,
-			ArmControl: game.ArmControlLastPressed,
+		Config: game.MatchConfig{
+			Rounds:        3,
+			RoundDuration: 60,
 		},
 	}
 
@@ -120,44 +108,20 @@ func main() {
 			minY := float64(arena.MinY)
 			maxY := float64(arena.MaxY - ascii.PlayerHeight + 1)
 
-			if !app.Left.MatchOver(&app.Right) {
+			match := &app.Match
+
+			if !match.Over() {
 				if paused {
 					drawCenteredText(text, text.Height/2,
 						"connect player two controller")
 				} else {
-					app.Left.Update(leftInput, state.DeltaTime, minY, maxY, arena, &app.Right)
-					app.Right.Update(rightInput, state.DeltaTime, minY, maxY, arena, &app.Left)
+					match.Update(leftInput, rightInput, state.DeltaTime, minY, maxY, arena)
 				}
 			}
 
-			drawPlayer(blocks, &app.Left, false)
-			drawPlayer(blocks, &app.Right, true)
-
-			drawCenteredText(
-				text,
-				1,
-				fmt.Sprintf("player 1: %d    player 2: %d",
-					app.Left.Score, app.Right.Score),
-			)
-
-			if app.Left.MatchOver(&app.Right) {
-				winner := "player 1"
-				if app.Left.KnockedOut {
-					winner = "player2"
-				}
-
-				drawCenteredText(
-					text,
-					text.Height/2,
-					winner+" wins by knockout",
-				)
-
-				drawCenteredText(
-					text,
-					text.Height/2+2,
-					"type 'go main' to return",
-				)
-			}
+			drawPlayer(blocks, &match.Left, false)
+			drawPlayer(blocks, &match.Right, true)
+			drawMatchHUD(text, match)
 
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
@@ -195,7 +159,7 @@ func handleCommand(command terminal.Command, app *AppState) {
 			app.Screen = ScreenMain
 			return
 		case "arena":
-			app.Screen = ScreenArena
+			startMatch(app)
 			return
 		}
 	}
