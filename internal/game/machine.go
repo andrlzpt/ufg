@@ -3,16 +3,19 @@ package game
 import "math"
 
 type Machine struct {
-	input       Input
-	activeArm   armID
-	lastArm     armID
-	thinkTime   float64
-	cooldown    float64
-	stuckTime   float64
-	punchTime   float64
-	lastLength  int
-	defending   bool
-	defenseTime float64
+	input            Input
+	activeArm        armID
+	lastArm          armID
+	thinkTime        float64
+	cooldown         float64
+	stuckTime        float64
+	punchTime        float64
+	lastLength       int
+	defending        bool
+	defenseTime      float64
+	defenseThinkTime float64
+	threatY          float64
+	danger           bool
 }
 
 func (m *Machine) Reset() {
@@ -66,14 +69,30 @@ func (m *Machine) Next(
 	}
 
 	m.thinkTime -= deltaTime
-	if m.thinkTime > 0 {
+	m.defenseThinkTime -= deltaTime
+
+	checkDefense := m.defenseThinkTime <= 0
+	if checkDefense {
+		// Check at least once per arm cell, up to 50 ms apart.
+		m.defenseThinkTime = min(0.05, 1/config.ArmSpeed)
+		m.threatY, m.danger = machineThreat(
+			self, opponent, config.ArmSpeed,
+		)
+	}
+
+	attackReady := m.thinkTime <= 0
+	defenseReady := checkDefense && (m.danger || m.defending)
+
+	if !attackReady && !defenseReady {
 		return m.input
 	}
 
-	m.thinkTime = 0.15
-	m.input = Input{}
+	if attackReady {
+		m.thinkTime = 0.15
+	}
 
-	threatY, danger := machineThreat(self, opponent, config.ArmSpeed)
+	m.input = Input{}
+	threatY, danger := m.threatY, m.danger
 
 	// Stop controlling a defense that was hit or is no longer needed.
 	if m.defending &&
