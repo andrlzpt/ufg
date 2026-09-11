@@ -107,9 +107,13 @@ func (m *Match) Update(
 		return
 	}
 
-	// Small steps prevent a long frame from updating one player
-	// far ahead of the other. Never simulate past the round bell.
-	const maxStep = 1.0 / 120.0
+	// At most half a cell of arm travel per simulation step.
+	// Faster arms therefore get more frequent steering decisions.
+	maxStep := min(
+		1.0/120.0,
+		0.5/m.Config.ArmSpeed,
+		0.5/m.Config.RetractSpeed(),
+	)
 
 	for deltaTime > 0 && !m.Over() {
 

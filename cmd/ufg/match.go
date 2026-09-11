@@ -19,27 +19,28 @@ func startMatch(app *AppState) {
 		game.Player{
 			X:          playerPadding,
 			Y:          playerY,
-			Speed:      40,
+			Speed:      80,
 			Facing:     game.FacingRight,
 			ArmControl: game.ArmControlLastPressed,
 		},
 		game.Player{
 			X:          float64(width - playerPadding - ascii.PlayerWidth),
 			Y:          playerY,
-			Speed:      40,
+			Speed:      80,
 			Facing:     game.FacingLeft,
 			ArmControl: game.ArmControlLastPressed,
 		},
 	)
 
 	if app.Mode == ModeOnePlayer {
-		app.Match.Machine = &game.Machine{}
+		app.Match.Machine = game.NewMachine(app.Difficulty, app.Match.Config.ArmSpeed)
 		app.Match.Machine.Reset()
 	}
 
 	app.Screen = ScreenArena
 	app.Paused = false
 	app.MenuItem = 0
+	app.DifficultyMenu = false
 
 }
 
@@ -60,6 +61,14 @@ func drawMatchHUD(
 		match.Config.Rounds,
 		int(math.Ceil(match.Remaining)),
 	))
+
+	if match.Machine != nil {
+		drawCenteredText(
+			text,
+			5,
+			"machine: "+game.DifficultyName(match.Machine.Level),
+		)
+	}
 
 	if showBreak && match.BreakRemaining > 0 && !match.Over() {
 		drawCenteredText(

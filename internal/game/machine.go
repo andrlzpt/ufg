@@ -3,26 +3,50 @@ package game
 import "math"
 
 type Machine struct {
-	input            Input
-	activeArm        armID
-	lastArm          armID
-	thinkTime        float64
-	cooldown         float64
-	stuckTime        float64
-	punchTime        float64
-	lastLength       int
-	defending        bool
-	defenseTime      float64
-	defenseThinkTime float64
-	threatY          float64
-	danger           bool
+	Level           int
+	skill           MachineConfig
+	clock           float64
+	threats         [2]threatMemory
+	attackReturning bool
+
+	input       Input
+	activeArm   armID
+	lastArm     armID
+	cooldown    float64
+	stuckTime   float64
+	punchTime   float64
+	lastLength  int
+	defending   bool
+	defenseTime float64
+	armSpeed    float64
+	timeScale   float64
 }
 
 func (m *Machine) Reset() {
-	*m = Machine{
-		cooldown: 0.75,
-		lastArm:  rightArm, // First tie chooses left.
+	level := max(DifficultyEasy, min(DifficultyHard, m.Level))
+	speed := m.armSpeed
+
+	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
+		speed = 30
 	}
+
+	scale := 30 / speed
+	skill := DifficultyConfig(level)
+
+	skill.ReactionDelay *= scale
+	skill.PredictionSeconds *= scale
+	skill.AttackPauseMin *= scale
+	skill.AttackPauseMax *= scale
+
+	*m = Machine{
+		Level:     level,
+		armSpeed:  speed,
+		timeScale: scale,
+		skill:     skill,
+		lastArm:   rightArm,
+	}
+
+	m.cooldown = m.attackPause()
 }
 
 // Next produces normal player input.
@@ -37,6 +61,8 @@ func (m *Machine) Next(
 		return Input{}
 	}
 
+	m.clock += deltaTime
+
 	attack := self.arm(m.activeArm)
 	defenseID := leftArm
 	if m.activeArm == leftArm {
@@ -45,6 +71,13 @@ func (m *Machine) Next(
 	defense := self.arm(defenseID)
 
 	m.cooldown = max(0, m.cooldown-deltaTime)
+
+	// Start one random pause when the attack finishes retracting.
+	// Do not roll a new duration every frame.
+	if m.attackReturning && !attack.Retracting {
+		m.cooldown = m.attackPause()
+	}
+	m.attackReturning = attack.Retracting
 
 	if m.defending {
 		m.defenseTime += deltaTime
@@ -68,35 +101,17 @@ func (m *Machine) Next(
 		m.input.RightArm = ArmInput{}
 	}
 
-	m.thinkTime -= deltaTime
-	m.defenseThinkTime -= deltaTime
-
-	checkDefense := m.defenseThinkTime <= 0
-	if checkDefense {
-		// Check at least once per arm cell, up to 50 ms apart.
-		m.defenseThinkTime = min(0.05, 1/config.ArmSpeed)
-		m.threatY, m.danger = machineThreat(
-			self, opponent, config.ArmSpeed,
-		)
-	}
-
-	attackReady := m.thinkTime <= 0
-	defenseReady := checkDefense && (m.danger || m.defending)
-
-	if !attackReady && !defenseReady {
-		return m.input
-	}
-
-	if attackReady {
-		m.thinkTime = 0.15
-	}
-
+	// Steering is evaluated each simulation step.
+	// Reaction delay is enforced separately by observeThreats.
 	m.input = Input{}
-	threatY, danger := m.threatY, m.danger
+
+	threatY, danger := m.observeThreats(
+		self, opponent, config.ArmSpeed,
+	)
 
 	// Stop controlling a defense that was hit or is no longer needed.
 	if m.defending &&
-		(defense.Retracting || !danger || m.defenseTime >= 1.5) {
+		(defense.Retracting || !danger || m.defenseTime >= 1.5*m.timeScale) {
 		m.defending = false
 		m.stuckTime = 0
 	}
@@ -138,7 +153,6 @@ func (m *Machine) Next(
 	}
 
 	if attack.Retracting {
-		m.cooldown = 0.75
 		m.punchTime = 0
 		m.stuckTime = 0
 		return m.input
@@ -147,7 +161,7 @@ func (m *Machine) Next(
 	extended := len(attack.Path) > 0
 
 	if extended {
-		if m.stuckTime >= 0.6 || m.punchTime >= 8 {
+		if m.stuckTime >= 0.6*m.timeScale || m.punchTime >= 8*m.timeScale {
 			return m.input // Release attack.
 		}
 
@@ -318,46 +332,6 @@ func machineDirection(arm *Arm, target Point, bounds Bounds) Direction {
 	}
 
 	return best
-}
-
-// machineThreat predicts a short straight continuation of each enemy glove.
-// It reads visible positions and directions, not the opponent's input.
-func machineThreat(self, opponent *Player, growSpeed float64) (float64, bool) {
-	const lookAheadSeconds = 1.2
-	distance := int(math.Ceil(growSpeed * lookAheadSeconds))
-
-	arms := [2]*Arm{&opponent.LeftArm, &opponent.RightArm}
-
-	// Check nearby future positions first.
-	for ahead := 0; ahead <= distance; ahead++ {
-		for _, arm := range arms {
-			if arm.Retracting || len(arm.Path) == 0 {
-				continue
-			}
-
-			tip := arm.Path[len(arm.Path)-1]
-			step := arm.TravelStep()
-
-			center := Point{
-				X: int(opponent.X) + tip.X + step.X*ahead,
-				Y: int(opponent.Y) + tip.Y + step.Y*ahead,
-			}
-
-			hit := gloveTouches(center, step, func(cell Point) bool {
-				local := Point{
-					X: cell.X - int(self.X),
-					Y: cell.Y - int(self.Y),
-				}
-				return self.noseContains(local)
-			})
-
-			if hit {
-				return float64(center.Y), true
-			}
-		}
-	}
-
-	return 0, false
 }
 
 // machineDodge chooses the direction that creates more vertical clearance.

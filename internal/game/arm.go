@@ -10,12 +10,15 @@ type Point struct {
 type Arm struct {
 	Path       []Point
 	Retracting bool
+	PunchID    uint64
+
 	direction  Direction
 	progress   float64
 	scoredArms [2]bool
 }
 
 func (a *Arm) Start(start Point, direction Direction) {
+	a.PunchID++
 	a.Path = append(a.Path[:0], start)
 	a.Retracting = false
 	a.direction = direction

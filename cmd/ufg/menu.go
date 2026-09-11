@@ -6,12 +6,17 @@ import (
 	"github.com/andrlzpt/ufg/internal/window"
 )
 
-var titleOptions = []string{"one player", "two players"}
+var titleOptions = []string{"one player", "two players", "difficulty"}
 var pauseOptions = []string{"resume", "restart", "main menu"}
 var resultOptions = []string{"rematch", "main menu"}
+var difficultyOptions = []string{"easy", "normal", "hard", "back"}
 
 func currentMenu(app *AppState) (string, []string) {
 	if app.Screen == ScreenMain {
+		if app.DifficultyMenu {
+			return "difficulty: " + game.DifficultyName(app.Difficulty),
+				difficultyOptions
+		}
 		return "untitled fighting game.", titleOptions
 	}
 
@@ -82,6 +87,14 @@ func handleMenus(
 	app *AppState,
 	text *ascii.Buffer,
 ) bool {
+
+	if state.PausePressed &&
+		app.Screen == ScreenMain && app.DifficultyMenu {
+		app.DifficultyMenu = false
+		app.MenuItem = 2
+		return true
+	}
+
 	if state.PausePressed && app.Screen == ScreenArena {
 		if app.Match.Over() {
 			returnToMain(app)
@@ -137,12 +150,32 @@ func handleMenus(
 }
 
 func activateMenuItem(app *AppState) {
+
 	if app.Screen == ScreenMain {
-		app.Mode = ModeOnePlayer
-		if app.MenuItem == 1 {
-			app.Mode = ModeTwoPlayers
+		if app.DifficultyMenu {
+			if app.MenuItem == 3 {
+				app.DifficultyMenu = false
+				app.MenuItem = 2
+				return
+			}
+
+			app.Difficulty = app.MenuItem + 1
+			app.DifficultyMenu = false
+			app.MenuItem = 2
+			return
 		}
-		startMatch(app)
+
+		switch app.MenuItem {
+		case 0:
+			app.Mode = ModeOnePlayer
+			startMatch(app)
+		case 1:
+			app.Mode = ModeTwoPlayers
+			startMatch(app)
+		case 2:
+			app.DifficultyMenu = true
+			app.MenuItem = app.Difficulty - 1
+		}
 		return
 	}
 
@@ -169,4 +202,5 @@ func returnToMain(app *AppState) {
 	app.Screen = ScreenMain
 	app.Paused = false
 	app.MenuItem = int(app.Mode)
+	app.DifficultyMenu = false
 }

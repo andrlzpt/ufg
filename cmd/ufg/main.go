@@ -39,12 +39,14 @@ const (
 )
 
 type AppState struct {
-	Screen   Screen
-	Mode     Mode
-	MenuItem int
-	Config   game.MatchConfig
-	Match    game.Match
-	Paused   bool
+	Screen         Screen
+	Mode           Mode
+	MenuItem       int
+	Config         game.MatchConfig
+	Match          game.Match
+	Paused         bool
+	Difficulty     int
+	DifficultyMenu bool
 }
 
 func main() {
@@ -67,9 +69,10 @@ func main() {
 			Rounds:          3,
 			RoundDuration:   60,
 			RoundBreak:      5,
-			ArmSpeed:        90,
-			RetractSpeedMul: 1.5,
+			ArmSpeed:        30,
+			RetractSpeedMul: 2,
 		},
+		Difficulty: game.DifficultyEasy,
 	}
 
 	commands := make(chan terminal.Command, 16)
@@ -182,6 +185,52 @@ func handleCommands(commands <-chan terminal.Command, app *AppState) {
 
 func handleCommand(command terminal.Command, app *AppState) {
 	fields := strings.Fields(command.Raw)
+	if len(fields) == 0 {
+		return
+	}
+
+	if fields[0] == "difficulty" {
+		if len(fields) == 1 {
+			fmt.Println(
+				"Selected difficulty:",
+				game.DifficultyName(app.Difficulty),
+			)
+
+			if app.Match.Machine != nil {
+				fmt.Println(
+					"Current match difficulty:",
+					game.DifficultyName(app.Match.Machine.Level),
+				)
+			}
+			return
+		}
+
+		if len(fields) == 2 {
+			level := 0
+
+			switch strings.ToLower(fields[1]) {
+			case "easy", "1":
+				level = game.DifficultyEasy
+			case "normal", "2":
+				level = game.DifficultyNormal
+			case "hard", "3":
+				level = game.DifficultyHard
+			}
+
+			if level != 0 {
+				app.Difficulty = level
+				fmt.Printf(
+					"Difficulty %s selected. Applies to the next match.\n",
+					game.DifficultyName(level),
+				)
+				return
+			}
+		}
+
+		fmt.Println("Use: difficulty easy|normal|hard")
+		return
+	}
+
 	if len(fields) == 2 && fields[0] == "go" {
 		switch fields[1] {
 		case "main":
@@ -192,5 +241,6 @@ func handleCommand(command terminal.Command, app *AppState) {
 			return
 		}
 	}
-	fmt.Println("Use: go arena or go main")
+
+	fmt.Println("Use: go arena, go main, or difficulty easy|normal|hard")
 }
