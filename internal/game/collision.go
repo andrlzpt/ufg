@@ -78,11 +78,16 @@ func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) boo
 		if !target.Retracting && !arm.scoredArms[id] {
 			p.Score++
 			arm.scoredArms[id] = true
-			target.BeginRetract()
 		}
+		target.BeginRetract()
 	}
 
-	return !blocked
+	if blocked {
+		arm.BeginRetract()
+		return false
+	}
+
+	return true
 }
 
 // armContains checks arm cells, excluding the glove.

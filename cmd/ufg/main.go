@@ -66,7 +66,7 @@ func main() {
 			Rounds:          3,
 			RoundDuration:   60,
 			RoundBreak:      5,
-			ArmSpeed:        60,
+			ArmSpeed:        90,
 			RetractSpeedMul: 1.5,
 		},
 	}
