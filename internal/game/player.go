@@ -29,6 +29,7 @@ type Player struct {
 	RightArm   Arm
 	ArmControl ArmControlMode
 	Facing     Facing
+	Score      int
 
 	activeArm    armID
 	previousHeld [2]bool
@@ -48,7 +49,7 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
-func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds) {
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player) {
 	if deltaTime <= 0 {
 		return
 	}
@@ -96,7 +97,9 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds
 			arm.Retract(deltaTime)
 		} else if p.canControl(id, inputs) {
 			if p.ArmControl == ArmControlSimultaneous || id == p.activeArm {
-				arm.Grow(inputs[id], deltaTime, armBounds)
+				arm.Grow(inputs[id], deltaTime, armBounds, func(next, step Point) bool {
+					return p.resolveArmHit(arm, opponent, next, step)
+				})
 			}
 		}
 	}

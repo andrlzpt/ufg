@@ -12,6 +12,7 @@ type Arm struct {
 	Retracting bool
 	direction  Direction
 	progress   float64
+	scoredArms [2]bool
 }
 
 const (
@@ -23,11 +24,12 @@ func (a *Arm) Start(start Point, direction Direction) {
 	a.Retracting = false
 	a.direction = direction
 	a.progress = 0
+	a.scoredArms = [2]bool{}
 }
 
 // Grow extends along the saved grid path.
 // No steering keeps the current direction. Direct reversal is ignored.
-func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds) {
+func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds, resolveHit func(next, step Point) bool) {
 	if !input.Held || a.Retracting || deltaTime <= 0 ||
 		len(a.Path) == 0 {
 		return
@@ -43,13 +45,21 @@ func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds) {
 
 		step := directionStep(direction)
 		tip := a.Path[len(a.Path)-1]
-
 		next := Point{
 			X: tip.X + step.X,
 			Y: tip.Y + step.Y,
 		}
 
-		if !a.canGrow(next, step, bounds) {
+		outside := gloveTouches(next, step, func(cell Point) bool {
+			return !bounds.Contains(cell)
+		})
+
+		if outside {
+			a.progress = 0
+			return
+		}
+
+		if !resolveHit(next, step) {
 			a.progress = 0
 			return
 		}
@@ -58,30 +68,6 @@ func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds) {
 		a.Path = append(a.Path, next)
 		a.progress--
 	}
-}
-
-// canGrow checks the full glove shape at its proposed position.
-// Its dimensions match ascii.DrawGlove.
-func (a *Arm) canGrow(next, step Point, bounds Bounds) bool {
-	for across := -1; across <= 1; across++ {
-		back := -1
-		if across == 0 {
-			back = -2
-		}
-
-		for forward := back; forward <= 2; forward++ {
-			cell := Point{
-				X: next.X + forward*step.X - across*step.Y,
-				Y: next.Y + forward*step.Y + across*step.X,
-			}
-
-			if !bounds.Contains(cell) || a.hitsOwnPath(cell) {
-				return false
-			}
-		}
-	}
-
-	return true
 }
 
 func (a *Arm) hitsOwnPath(cell Point) bool {

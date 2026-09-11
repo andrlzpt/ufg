@@ -124,12 +124,19 @@ func main() {
 				drawCenteredText(text, text.Height/2,
 					"connect player two controller")
 			} else {
-				app.Left.Update(leftInput, state.DeltaTime, minY, maxY, arena)
-				app.Right.Update(rightInput, state.DeltaTime, minY, maxY, arena)
+				app.Left.Update(leftInput, state.DeltaTime, minY, maxY, arena, &app.Right)
+				app.Right.Update(rightInput, state.DeltaTime, minY, maxY, arena, &app.Left)
 			}
 
 			drawPlayer(blocks, &app.Left, false)
 			drawPlayer(blocks, &app.Right, true)
+
+			drawCenteredText(
+				text,
+				1,
+				fmt.Sprintf("player 1: %d    player 2: %d",
+					app.Left.Score, app.Right.Score),
+			)
 
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
