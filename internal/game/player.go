@@ -30,9 +30,15 @@ type Player struct {
 	ArmControl ArmControlMode
 	Facing     Facing
 	Score      int
+	KnockedOut bool
 
 	activeArm    armID
 	previousHeld [2]bool
+}
+
+// MatchOver informs if the match is over
+func (p *Player) MatchOver(opponent *Player) bool {
+	return p.KnockedOut || (opponent != nil && opponent.KnockedOut)
 }
 
 // Move keeps the player's top edge between minY and maxY.
@@ -50,7 +56,7 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
 func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player) {
-	if deltaTime <= 0 {
+	if deltaTime <= 0 || p.MatchOver(opponent) {
 		return
 	}
 

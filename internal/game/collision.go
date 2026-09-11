@@ -2,6 +2,15 @@ package game
 
 import "slices"
 
+// noseContains matches the two nose cells in playerShape.
+func (p *Player) noseContains(cell Point) bool {
+	if p.Facing == FacingLeft {
+		cell.X = 14 - cell.X
+	}
+
+	return cell.Y == 7 && (cell.X == 8 || cell.X == 9)
+}
+
 // gloveTouches checks the same rotated shape used by ascii.DrawGlove.
 func gloveTouches(center, step Point, touches func(Point) bool) bool {
 	for across := -1; across <= 1; across++ {
@@ -27,11 +36,7 @@ func gloveTouches(center, step Point, touches func(Point) bool) bool {
 
 // resolveArmHit checks a proposed glove position before growth.
 // Coordinates are relative to the attacking player.
-func (p *Player) resolveArmHit(
-	arm *Arm,
-	opponent *Player,
-	next, step Point,
-) bool {
+func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) bool {
 	// Only this arm's own path causes a penalty.
 	// The player's other arm is deliberately ignored.
 	if gloveTouches(next, step, arm.hitsOwnPath) {
@@ -49,7 +54,14 @@ func (p *Player) resolveArmHit(
 		X: next.X + int(p.X) - int(opponent.X),
 		Y: next.Y + int(p.Y) - int(opponent.Y),
 	}
+
+	if gloveTouches(targetCenter, step, opponent.noseContains) {
+		opponent.KnockedOut = true
+		return false
+	}
+
 	blocked := false
+
 	for id := leftArm; id <= rightArm; id++ {
 		target := opponent.arm(id)
 
