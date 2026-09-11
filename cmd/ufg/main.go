@@ -110,15 +110,22 @@ func main() {
 				rightInput = playerInput(state.Controller.Controls)
 			}
 
-			minY := float64(arenaDepth + 1)
-			maxY := float64(blocks.Height - arenaDepth - 1 - ascii.PlayerHeight)
+			arena := game.Bounds{
+				MinX: arenaDepth + 1,
+				MinY: arenaDepth + 1,
+				MaxX: blocks.Width - arenaDepth - 2,
+				MaxY: blocks.Height - arenaDepth - 2,
+			}
+
+			minY := float64(arena.MinY)
+			maxY := float64(arena.MaxY - ascii.PlayerHeight + 1)
 
 			if paused {
 				drawCenteredText(text, text.Height/2,
 					"connect player two controller")
 			} else {
-				app.Left.Update(leftInput, state.DeltaTime, minY, maxY)
-				app.Right.Update(rightInput, state.DeltaTime, minY, maxY)
+				app.Left.Update(leftInput, state.DeltaTime, minY, maxY, arena)
+				app.Right.Update(rightInput, state.DeltaTime, minY, maxY, arena)
 			}
 
 			drawPlayer(blocks, &app.Left, false)

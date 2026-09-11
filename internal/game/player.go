@@ -48,7 +48,7 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
-func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds) {
 	if deltaTime <= 0 {
 		return
 	}
@@ -85,6 +85,9 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
 		}
 	}
 
+	// Paths are relative to the player's rendered position.
+	armBounds := arena.RelativeTo(int(p.X), int(p.Y))
+
 	// Retraction never waits for the other arm.
 	for id := leftArm; id <= rightArm; id++ {
 		arm := p.arm(id)
@@ -93,7 +96,7 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
 			arm.Retract(deltaTime)
 		} else if p.canControl(id, inputs) {
 			if p.ArmControl == ArmControlSimultaneous || id == p.activeArm {
-				arm.Grow(inputs[id], deltaTime)
+				arm.Grow(inputs[id], deltaTime, armBounds)
 			}
 		}
 	}

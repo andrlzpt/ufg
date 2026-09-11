@@ -1,5 +1,7 @@
 package game
 
+import "slices"
+
 type Point struct {
 	X int
 	Y int
@@ -13,8 +15,7 @@ type Arm struct {
 }
 
 const (
-	armSpeed     = 30.0 // Cells per second.
-	armMaxLength = 150  // Extension cells.
+	armSpeed = 30.0 // Cells per second.
 )
 
 func (a *Arm) Start(start Point, direction Direction) {
@@ -26,7 +27,7 @@ func (a *Arm) Start(start Point, direction Direction) {
 
 // Grow extends along the saved grid path.
 // No steering keeps the current direction. Direct reversal is ignored.
-func (a *Arm) Grow(input ArmInput, deltaTime float64) {
+func (a *Arm) Grow(input ArmInput, deltaTime float64, bounds Bounds) {
 	if !input.Held || a.Retracting || deltaTime <= 0 ||
 		len(a.Path) == 0 {
 		return
@@ -34,24 +35,61 @@ func (a *Arm) Grow(input ArmInput, deltaTime float64) {
 
 	a.progress += armSpeed * deltaTime
 
-	for a.progress >= 1 && len(a.Path)-1 < armMaxLength {
-		if canTurn(a.direction, input.Steer) {
-			a.direction = input.Steer
+	for a.progress >= 1 {
+		direction := a.direction
+		if canTurn(direction, input.Steer) {
+			direction = input.Steer
 		}
 
-		step := directionStep(a.direction)
+		step := directionStep(direction)
 		tip := a.Path[len(a.Path)-1]
 
-		a.Path = append(a.Path, Point{
+		next := Point{
 			X: tip.X + step.X,
 			Y: tip.Y + step.Y,
-		})
+		}
+
+		if !a.canGrow(next, step, bounds) {
+			a.progress = 0
+			return
+		}
+
+		a.direction = direction
+		a.Path = append(a.Path, next)
 		a.progress--
 	}
+}
 
-	if len(a.Path)-1 >= armMaxLength {
-		a.progress = 0
+// canGrow checks the full glove shape at its proposed position.
+// Its dimensions match ascii.DrawGlove.
+func (a *Arm) canGrow(next, step Point, bounds Bounds) bool {
+	for across := -1; across <= 1; across++ {
+		back := -1
+		if across == 0 {
+			back = -2
+		}
+
+		for forward := back; forward <= 2; forward++ {
+			cell := Point{
+				X: next.X + forward*step.X - across*step.Y,
+				Y: next.Y + forward*step.Y + across*step.X,
+			}
+
+			if !bounds.Contains(cell) || a.hitsOwnPath(cell) {
+				return false
+			}
+		}
 	}
+
+	return true
+}
+
+func (a *Arm) hitsOwnPath(cell Point) bool {
+	// The last two cells form the attachment behind the glove.
+	// They may overlap the glove naturally.
+	end := max(0, len(a.Path)-2)
+
+	return slices.Contains(a.Path[:end], cell)
 }
 
 func (a *Arm) BeginRetract() {
