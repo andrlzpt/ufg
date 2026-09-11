@@ -3,9 +3,11 @@ package game
 import "math"
 
 type MatchConfig struct {
-	Rounds        int
-	RoundDuration float64 // Seconds.
-	RoundBreak    float64 // Seconds between rounds; zero skips break.
+	Rounds          int
+	RoundDuration   float64 // Seconds.
+	RoundBreak      float64 // Seconds between rounds; zero skips break.
+	ArmSpeed        float64 // Cell per second.
+	RetractSpeedMul float64 // Retraction speed multiplier
 }
 
 type MatchResult int
@@ -51,6 +53,18 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 		config.RoundBreak = 5
 	}
 
+	if config.ArmSpeed <= 0 ||
+		math.IsNaN(config.ArmSpeed) ||
+		math.IsInf(config.ArmSpeed, 0) {
+		config.ArmSpeed = 30
+	}
+
+	if config.RetractSpeedMul <= 0 ||
+		math.IsNaN(config.RetractSpeedMul) ||
+		math.IsInf(config.RetractSpeedMul, 0) {
+		config.RetractSpeedMul = 1.5
+	}
+
 	m := Match{
 		Config:    config,
 		Left:      left,
@@ -67,6 +81,10 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 	m.resetPlayers(Input{}, Input{})
 
 	return m
+}
+
+func (c MatchConfig) RetractSpeed() float64 {
+	return c.ArmSpeed * c.RetractSpeedMul
 }
 
 func (m *Match) Over() bool {
@@ -114,14 +132,15 @@ func (m *Match) Update(
 			rightInput = m.Machine.Next(
 				&m.Right, &m.Left,
 				step, minY, maxY, arena,
+				m.Config,
 			)
 		}
 
 		m.Left.Update(
-			leftInput, step, minY, maxY, arena, &m.Right,
+			leftInput, step, minY, maxY, arena, &m.Right, m.Config,
 		)
 		m.Right.Update(
-			rightInput, step, minY, maxY, arena, &m.Left,
+			rightInput, step, minY, maxY, arena, &m.Left, m.Config,
 		)
 
 		m.Remaining = max(0, m.Remaining-step)

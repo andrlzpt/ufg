@@ -28,6 +28,7 @@ func (m *Machine) Next(
 	self, opponent *Player,
 	deltaTime, minY, maxY float64,
 	arena Bounds,
+	config MatchConfig,
 ) Input {
 	if deltaTime <= 0 || opponent == nil || self.MatchOver(opponent) {
 		return Input{}
@@ -72,7 +73,7 @@ func (m *Machine) Next(
 	m.thinkTime = 0.15
 	m.input = Input{}
 
-	threatY, danger := machineThreat(self, opponent)
+	threatY, danger := machineThreat(self, opponent, config.ArmSpeed)
 
 	// Stop controlling a defense that was hit or is no longer needed.
 	if m.defending &&
@@ -302,9 +303,9 @@ func machineDirection(arm *Arm, target Point, bounds Bounds) Direction {
 
 // machineThreat predicts a short straight continuation of each enemy glove.
 // It reads visible positions and directions, not the opponent's input.
-func machineThreat(self, opponent *Player) (float64, bool) {
+func machineThreat(self, opponent *Player, growSpeed float64) (float64, bool) {
 	const lookAheadSeconds = 1.2
-	distance := int(armSpeed * lookAheadSeconds)
+	distance := int(math.Ceil(growSpeed * lookAheadSeconds))
 
 	arms := [2]*Arm{&opponent.LeftArm, &opponent.RightArm}
 

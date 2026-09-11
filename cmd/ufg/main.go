@@ -63,9 +63,11 @@ func main() {
 	app := AppState{
 		Screen: ScreenMain,
 		Config: game.MatchConfig{
-			Rounds:        3,
-			RoundDuration: 60,
-			RoundBreak:    5,
+			Rounds:          3,
+			RoundDuration:   60,
+			RoundBreak:      5,
+			ArmSpeed:        60,
+			RetractSpeedMul: 1.5,
 		},
 	}
 
