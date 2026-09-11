@@ -5,6 +5,7 @@ import "math"
 type MatchConfig struct {
 	Rounds        int
 	RoundDuration float64 // Seconds.
+	RoundBreak    float64 // Seconds between rounds; zero skips break.
 }
 
 type MatchResult int
@@ -17,13 +18,14 @@ const (
 )
 
 type Match struct {
-	Config    MatchConfig
-	Left      Player
-	Right     Player
-	Round     int
-	Remaining float64
-	Result    MatchResult
-	Knockout  bool
+	Config         MatchConfig
+	Left           Player
+	Right          Player
+	Round          int
+	Remaining      float64
+	Result         MatchResult
+	Knockout       bool
+	BreakRemaining float64
 
 	spawn [2]struct {
 		X float64
@@ -40,6 +42,12 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 		math.IsNaN(config.RoundDuration) ||
 		math.IsInf(config.RoundDuration, 0) {
 		config.RoundDuration = 60
+	}
+
+	if config.RoundBreak < 0 ||
+		math.IsNaN(config.RoundBreak) ||
+		math.IsInf(config.RoundBreak, 0) {
+		config.RoundBreak = 5
 	}
 
 	m := Match{
@@ -85,6 +93,20 @@ func (m *Match) Update(
 	const maxStep = 1.0 / 120.0
 
 	for deltaTime > 0 && !m.Over() {
+
+		if m.BreakRemaining > 0 {
+			step := min(deltaTime, m.BreakRemaining)
+			m.BreakRemaining = max(0, m.BreakRemaining-step)
+			deltaTime -= step
+
+			if m.BreakRemaining == 0 {
+				// Ignore punch buttons held during the countdown.
+				m.resetPlayers(leftInput, rightInput)
+			}
+
+			continue
+		}
+
 		step := min(deltaTime, maxStep, m.Remaining)
 
 		m.Left.Update(
@@ -109,6 +131,7 @@ func (m *Match) Update(
 
 			m.Round++
 			m.Remaining = m.Config.RoundDuration
+			m.BreakRemaining = m.Config.RoundBreak
 			m.resetPlayers(leftInput, rightInput)
 		}
 	}

@@ -49,6 +49,24 @@ func drawMatchHUD(text *ascii.Buffer, match *game.Match) {
 		int(math.Ceil(match.Remaining)),
 	))
 
+	if match.BreakRemaining > 0 && !match.Over() {
+		drawCenteredText(
+			text,
+			text.Height/2,
+			"round over. get ready.",
+		)
+		drawCenteredText(
+			text,
+			text.Height/2+2,
+			fmt.Sprintf(
+				"round %d starts in %d",
+				match.Round,
+				int(math.Ceil(match.BreakRemaining)),
+			),
+		)
+		return
+	}
+
 	if !match.Over() {
 		return
 	}
