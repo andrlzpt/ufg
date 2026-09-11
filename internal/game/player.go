@@ -29,9 +29,16 @@ type Player struct {
 	RightArm   Arm
 	ArmControl ArmControlMode
 	Facing     Facing
+	Score      int
+	KnockedOut bool
 
 	activeArm    armID
 	previousHeld [2]bool
+}
+
+// MatchOver informs if the match is over
+func (p *Player) MatchOver(opponent *Player) bool {
+	return p.KnockedOut || (opponent != nil && opponent.KnockedOut)
 }
 
 // Move keeps the player's top edge between minY and maxY.
@@ -48,8 +55,8 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
-func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
-	if deltaTime <= 0 {
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player) {
+	if deltaTime <= 0 || p.MatchOver(opponent) {
 		return
 	}
 
@@ -85,6 +92,9 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
 		}
 	}
 
+	// Paths are relative to the player's rendered position.
+	armBounds := arena.RelativeTo(int(p.X), int(p.Y))
+
 	// Retraction never waits for the other arm.
 	for id := leftArm; id <= rightArm; id++ {
 		arm := p.arm(id)
@@ -93,7 +103,9 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64) {
 			arm.Retract(deltaTime)
 		} else if p.canControl(id, inputs) {
 			if p.ArmControl == ArmControlSimultaneous || id == p.activeArm {
-				arm.Grow(inputs[id], deltaTime)
+				arm.Grow(inputs[id], deltaTime, armBounds, func(next, step Point) bool {
+					return p.resolveArmHit(arm, opponent, next, step)
+				})
 			}
 		}
 	}

@@ -110,19 +110,54 @@ func main() {
 				rightInput = playerInput(state.Controller.Controls)
 			}
 
-			minY := float64(arenaDepth + 1)
-			maxY := float64(blocks.Height - arenaDepth - 1 - ascii.PlayerHeight)
+			arena := game.Bounds{
+				MinX: arenaDepth + 1,
+				MinY: arenaDepth + 1,
+				MaxX: blocks.Width - arenaDepth - 2,
+				MaxY: blocks.Height - arenaDepth - 2,
+			}
 
-			if paused {
-				drawCenteredText(text, text.Height/2,
-					"connect player two controller")
-			} else {
-				app.Left.Update(leftInput, state.DeltaTime, minY, maxY)
-				app.Right.Update(rightInput, state.DeltaTime, minY, maxY)
+			minY := float64(arena.MinY)
+			maxY := float64(arena.MaxY - ascii.PlayerHeight + 1)
+
+			if !app.Left.MatchOver(&app.Right) {
+				if paused {
+					drawCenteredText(text, text.Height/2,
+						"connect player two controller")
+				} else {
+					app.Left.Update(leftInput, state.DeltaTime, minY, maxY, arena, &app.Right)
+					app.Right.Update(rightInput, state.DeltaTime, minY, maxY, arena, &app.Left)
+				}
 			}
 
 			drawPlayer(blocks, &app.Left, false)
 			drawPlayer(blocks, &app.Right, true)
+
+			drawCenteredText(
+				text,
+				1,
+				fmt.Sprintf("player 1: %d    player 2: %d",
+					app.Left.Score, app.Right.Score),
+			)
+
+			if app.Left.MatchOver(&app.Right) {
+				winner := "player 1"
+				if app.Left.KnockedOut {
+					winner = "player2"
+				}
+
+				drawCenteredText(
+					text,
+					text.Height/2,
+					winner+" wins by knockout",
+				)
+
+				drawCenteredText(
+					text,
+					text.Height/2+2,
+					"type 'go main' to return",
+				)
+			}
 
 		} else {
 			ascii.DrawBorder(blocks, 0, 0, blocks.Width, blocks.Height, 3, ascii.LineZigzag)
