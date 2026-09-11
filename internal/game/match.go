@@ -26,6 +26,7 @@ type Match struct {
 	Result         MatchResult
 	Knockout       bool
 	BreakRemaining float64
+	Machine        *Machine
 
 	spawn [2]struct {
 		X float64
@@ -109,6 +110,13 @@ func (m *Match) Update(
 
 		step := min(deltaTime, maxStep, m.Remaining)
 
+		if m.Machine != nil {
+			rightInput = m.Machine.Next(
+				&m.Right, &m.Left,
+				step, minY, maxY, arena,
+			)
+		}
+
 		m.Left.Update(
 			leftInput, step, minY, maxY, arena, &m.Right,
 		)
@@ -170,6 +178,11 @@ func (m *Match) finishPoints() {
 // resetPlayers preserves scores and player settings.
 // Held punch buttons must be released before punching again.
 func (m *Match) resetPlayers(leftInput, rightInput Input) {
+	if m.Machine != nil {
+		m.Machine.Reset()
+		rightInput = Input{}
+	}
+
 	players := [2]*Player{&m.Left, &m.Right}
 	inputs := [2]Input{leftInput, rightInput}
 

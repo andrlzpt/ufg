@@ -64,7 +64,7 @@ func main() {
 		Screen: ScreenMain,
 		Config: game.MatchConfig{
 			Rounds:        3,
-			RoundDuration: 3,
+			RoundDuration: 60,
 			RoundBreak:    5,
 		},
 	}

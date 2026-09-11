@@ -32,6 +32,11 @@ func startMatch(app *AppState) {
 		},
 	)
 
+	if app.Mode == ModeOnePlayer {
+		app.Match.Machine = &game.Machine{}
+		app.Match.Machine.Reset()
+	}
+
 	app.Screen = ScreenArena
 }
 
