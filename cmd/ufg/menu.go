@@ -10,6 +10,9 @@ var titleOptions = []string{"one player", "two players", "difficulty"}
 var pauseOptions = []string{"resume", "restart", "main menu"}
 var resultOptions = []string{"rematch", "main menu"}
 var difficultyOptions = []string{"easy", "normal", "hard", "back"}
+var victoryOptions = []string{"continue", "rematch", "main menu"}
+var retryOptions = []string{"retry", "main menu"}
+var championshipOptions = []string{"new championship", "main menu"}
 
 func currentMenu(app *AppState) (string, []string) {
 	if app.Screen == ScreenMain {
@@ -21,23 +24,7 @@ func currentMenu(app *AppState) (string, []string) {
 	}
 
 	if app.Match.Over() {
-		message := "draw"
-
-		if app.Match.Result != game.MatchDraw {
-			winner := "player 1"
-			if app.Match.Result == game.MatchRightWins {
-				winner = "player 2"
-			}
-
-			reason := "points"
-			if app.Match.Knockout {
-				reason = "knockout"
-			}
-
-			message = winner + " wins by " + reason
-		}
-
-		return message, resultOptions
+		return matchResultMenu(&app.Match)
 	}
 
 	if app.Paused {
@@ -180,9 +167,26 @@ func activateMenuItem(app *AppState) {
 	}
 
 	if app.Match.Over() {
-		if app.MenuItem == 0 {
+		_, options := matchResultMenu(&app.Match)
+		if app.MenuItem < 0 || app.MenuItem >= len(options) {
+			return
+		}
+
+		switch options[app.MenuItem] {
+		case "continue":
+			if app.Championship.Advance(app.Match) {
+				startMatch(app)
+			}
+
+		case "rematch", "retry":
 			startMatch(app)
-		} else {
+
+		case "new championship":
+			app.Championship = game.NewChampionship()
+			app.Mode = ModeOnePlayer
+			startMatch(app)
+
+		case "main menu":
 			returnToMain(app)
 		}
 		return
@@ -203,4 +207,37 @@ func returnToMain(app *AppState) {
 	app.Paused = false
 	app.MenuItem = int(app.Mode)
 	app.DifficultyMenu = false
+}
+
+func matchResultMenu(match *game.Match) (string, []string) {
+	message := "draw"
+
+	if match.Result != game.MatchDraw {
+		winner := "player 1"
+		if match.Result == game.MatchRightWins {
+			winner = "player 2"
+		}
+
+		reason := "points"
+		if match.Knockout {
+			reason = "knockout"
+		}
+
+		message = winner + " wins by " + reason
+	}
+
+	// Local two-player matches have no championship progression.
+	if match.Machine == nil {
+		return message, resultOptions
+	}
+
+	if match.Result != game.MatchLeftWins {
+		return message, retryOptions
+	}
+
+	if match.TotalBouts > 0 && match.Bout == match.TotalBouts {
+		return "championship complete. you win!", championshipOptions
+	}
+
+	return message, victoryOptions
 }

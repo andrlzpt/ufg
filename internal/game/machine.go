@@ -3,27 +3,32 @@ package game
 import "math"
 
 type Machine struct {
-	Level           int
+	Difficulty int
+	Opponent   OpponentConfig
+
 	skill           MachineConfig
 	clock           float64
 	threats         [2]threatMemory
 	attackReturning bool
-
-	input       Input
-	activeArm   armID
-	lastArm     armID
-	cooldown    float64
-	stuckTime   float64
-	punchTime   float64
-	lastLength  int
-	defending   bool
-	defenseTime float64
-	armSpeed    float64
-	timeScale   float64
+	input           Input
+	activeArm       armID
+	lastArm         armID
+	cooldown        float64
+	stuckTime       float64
+	punchTime       float64
+	lastLength      int
+	defending       bool
+	defenseTime     float64
+	armSpeed        float64
+	timeScale       float64
 }
 
 func (m *Machine) Reset() {
-	level := max(DifficultyEasy, min(DifficultyHard, m.Level))
+	difficulty := max(
+		DifficultyEasy,
+		min(DifficultyHard, m.Difficulty),
+	)
+	opponent := m.Opponent.normalized()
 	speed := m.armSpeed
 
 	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
@@ -31,7 +36,7 @@ func (m *Machine) Reset() {
 	}
 
 	scale := 30 / speed
-	skill := DifficultyConfig(level)
+	skill := OpponentMachineConfig(difficulty, opponent)
 
 	skill.ReactionDelay *= scale
 	skill.PredictionSeconds *= scale
@@ -39,11 +44,12 @@ func (m *Machine) Reset() {
 	skill.AttackPauseMax *= scale
 
 	*m = Machine{
-		Level:     level,
-		armSpeed:  speed,
-		timeScale: scale,
-		skill:     skill,
-		lastArm:   rightArm,
+		Difficulty: difficulty,
+		Opponent:   opponent,
+		armSpeed:   speed,
+		timeScale:  scale,
+		skill:      skill,
+		lastArm:    rightArm,
 	}
 
 	m.cooldown = m.attackPause()

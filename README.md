@@ -46,3 +46,22 @@ Round count, round time, and tie rule not picked yet.
 13. Add rounds and score. Pick round count, round time, and tie rule. Most points wins when all rounds end.
 14. Add machine opponent for one player mode. Move, punch, steer, release. Same rules as human. Tune reaction time.
 15. Test one player against machine and two players with joystick. Tune speed, arm length, and controls.
+
+
+### Goals
+
+eventually we need to add: 
+
+item spawning. 
+
+two kinds of items:
+a. items to influence speed and quantity of punches allowed before retracting. We can start with these:
+    i. Double Speed
+    ii. Double Punches
+These items should be collected by glove contact and should be spawned in the area in the middle of both players.
+
+b. items to influence the score. We can start with these:
+    i. +1 point
+    ii. Reverse Score
+These items should be picked up by player's body. They spawn only in the players' area.
+

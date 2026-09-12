@@ -44,6 +44,7 @@ type AppState struct {
 	MenuItem       int
 	Config         game.MatchConfig
 	Match          game.Match
+	Championship   game.Championship
 	Paused         bool
 	Difficulty     int
 	DifficultyMenu bool
@@ -72,7 +73,8 @@ func main() {
 			ArmSpeed:        30,
 			RetractSpeedMul: 2,
 		},
-		Difficulty: game.DifficultyEasy,
+		Championship: game.NewChampionship(),
+		Difficulty:   game.DifficultyEasy,
 	}
 
 	commands := make(chan terminal.Command, 16)
@@ -199,7 +201,7 @@ func handleCommand(command terminal.Command, app *AppState) {
 			if app.Match.Machine != nil {
 				fmt.Println(
 					"Current match difficulty:",
-					game.DifficultyName(app.Match.Machine.Level),
+					game.DifficultyName(app.Match.Machine.Difficulty),
 				)
 			}
 			return

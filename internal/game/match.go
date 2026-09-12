@@ -28,7 +28,10 @@ type Match struct {
 	Result         MatchResult
 	Knockout       bool
 	BreakRemaining float64
+	Opponent       OpponentConfig
 	Machine        *Machine
+	Bout           int // One-based championship bout.
+	TotalBouts     int
 
 	spawn [2]struct {
 		X float64
