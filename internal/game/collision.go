@@ -83,7 +83,11 @@ func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) boo
 	}
 
 	if blocked {
-		arm.BeginRetract()
+		// A powered punch waits for the first struck arm to clear.
+		// Returning arms do not consume another hit.
+		if !arm.DoublePunches || arm.HitsRemaining <= 0 {
+			arm.BeginRetract()
+		}
 		return false
 	}
 

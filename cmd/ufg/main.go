@@ -141,12 +141,18 @@ func main() {
 					app.MenuItem = 0
 				}
 			}
-
+			drawItems(blocks, match.Items)
 			drawPlayer(blocks, &match.Left, false)
 			drawPlayer(blocks, &match.Right, true)
 
 			showMenu := app.Paused || match.Over()
 			drawMatchHUD(text, match, !showMenu)
+			if !showMenu {
+				drawCenteredText(
+					text, 7,
+					"S speed | D extra hit | + point | X swap",
+				)
+			}
 
 			if showMenu {
 				drawAppMenu(text, &app)

@@ -22,18 +22,27 @@ const (
 )
 
 type Player struct {
-	X          float64
-	Y          float64
-	Speed      float64
-	LeftArm    Arm
-	RightArm   Arm
-	ArmControl ArmControlMode
-	Facing     Facing
-	Score      int
-	KnockedOut bool
+	X              float64
+	Y              float64
+	Speed          float64
+	SpeedRemaining float64
+	LeftArm        Arm
+	RightArm       Arm
+	ArmControl     ArmControlMode
+	Facing         Facing
+	Score          int
+	KnockedOut     bool
 
 	activeArm    armID
 	previousHeld [2]bool
+}
+
+// ArmSpeedMultiplier doubles the speed. Fixed doubling is an initial implementation
+func (p *Player) ArmSpeedMultiplier() float64 {
+	if p.SpeedRemaining > 0 {
+		return 2
+	}
+	return 1
 }
 
 // MatchOver informs if the match is over
@@ -60,6 +69,8 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds
 		return
 	}
 
+	// Config is passed by value. Only this player's effective speed changes.
+	config.ArmSpeed *= p.ArmSpeedMultiplier()
 	inputs := [2]ArmInput{input.LeftArm, input.RightArm}
 
 	for id := leftArm; id <= rightArm; id++ {

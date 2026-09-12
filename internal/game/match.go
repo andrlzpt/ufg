@@ -32,8 +32,10 @@ type Match struct {
 	Machine        *Machine
 	Bout           int // One-based championship bout.
 	TotalBouts     int
+	Items          []Item
 
-	spawn [2]struct {
+	spawnTimer float64
+	spawn      [2]struct {
 		X float64
 		Y float64
 	}
@@ -114,8 +116,9 @@ func (m *Match) Update(
 	// Faster arms therefore get more frequent steering decisions.
 	maxStep := min(
 		1.0/120.0,
-		0.5/m.Config.ArmSpeed,
-		0.5/m.Config.RetractSpeed(),
+		0.5/(2*m.Config.ArmSpeed),
+		0.5/(2*m.Config.RetractSpeed()),
+		0.5/max(1, m.Left.Speed, m.Right.Speed),
 	)
 
 	for deltaTime > 0 && !m.Over() {
@@ -135,6 +138,8 @@ func (m *Match) Update(
 
 		step := min(deltaTime, maxStep, m.Remaining)
 
+		m.tickItems(step, arena)
+
 		if m.Machine != nil {
 			rightInput = m.Machine.Next(
 				&m.Right, &m.Left,
@@ -149,6 +154,10 @@ func (m *Match) Update(
 		m.Right.Update(
 			rightInput, step, minY, maxY, arena, &m.Left, m.Config,
 		)
+
+		if !m.Left.MatchOver(&m.Right) {
+			m.collectItems()
+		}
 
 		m.Remaining = max(0, m.Remaining-step)
 		deltaTime -= step
@@ -204,6 +213,8 @@ func (m *Match) finishPoints() {
 // resetPlayers preserves scores and player settings.
 // Held punch buttons must be released before punching again.
 func (m *Match) resetPlayers(leftInput, rightInput Input) {
+	m.Items = nil
+	m.spawnTimer = itemSpawnInterval
 	if m.Machine != nil {
 		m.Machine.Reset()
 		rightInput = Input{}
