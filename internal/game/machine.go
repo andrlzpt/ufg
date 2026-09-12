@@ -112,7 +112,7 @@ func (m *Machine) Next(
 	m.input = Input{}
 
 	threatY, danger := m.observeThreats(
-		self, opponent, config.ArmSpeed,
+		self, opponent, config.ArmSpeed*opponent.ArmSpeedMultiplier(),
 	)
 
 	// Stop controlling a defense that was hit or is no longer needed.

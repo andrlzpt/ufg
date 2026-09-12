@@ -8,9 +8,11 @@ type Point struct {
 }
 
 type Arm struct {
-	Path       []Point
-	Retracting bool
-	PunchID    uint64
+	Path          []Point
+	Retracting    bool
+	PunchID       uint64
+	DoublePunches bool
+	HitsRemaining int
 
 	direction  Direction
 	progress   float64
@@ -24,6 +26,8 @@ func (a *Arm) Start(start Point, direction Direction) {
 	a.direction = direction
 	a.progress = 0
 	a.scoredArms = [2]bool{}
+	a.DoublePunches = false
+	a.HitsRemaining = 1
 }
 
 // Grow extends along the saved grid path.
@@ -104,6 +108,8 @@ func (a *Arm) Retract(deltaTime, speed float64) {
 		a.Retracting = false
 		a.direction = DirectionRight
 		a.progress = 0
+		a.DoublePunches = false
+		a.HitsRemaining = 0
 	}
 }
 

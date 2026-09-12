@@ -48,7 +48,7 @@ Round count, round time, and tie rule not picked yet.
 15. Test one player against machine and two players with joystick. Tune speed, arm length, and controls.
 
 
-### Goals
+### Feature
 
 eventually we need to add: 
 
