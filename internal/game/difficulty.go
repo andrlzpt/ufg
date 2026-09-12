@@ -63,10 +63,11 @@ func DifficultyConfig(level int) MachineConfig {
 	}
 }
 
-func NewMachine(level int, armSpeed float64) *Machine {
+func NewMachine(difficulty int, opponent OpponentConfig, armSpeed float64) *Machine {
 	m := &Machine{
-		Level:    level,
-		armSpeed: armSpeed,
+		Difficulty: difficulty,
+		Opponent:   opponent,
+		armSpeed:   armSpeed,
 	}
 	m.Reset()
 	return m
