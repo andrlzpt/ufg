@@ -63,7 +63,7 @@ func renderWallHUD(
 	bottom := height - wallHeight/2
 	hint := "esc: pause"
 	if missingController {
-		hint = "connect player two controller"
+		hint = "device missing. esc: controls"
 	}
 
 	renderer.RenderTextLine(

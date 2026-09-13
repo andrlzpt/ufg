@@ -55,6 +55,7 @@ func startMatch(app *AppState) {
 	app.MenuItem = 0
 	app.DifficultyMenu = false
 	app.ArenaMenu = false
+	app.ControlsMenu = false
 
 }
 

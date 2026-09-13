@@ -12,7 +12,7 @@ type State struct {
 	ElapsedTime         float64
 	FrameCount          uint64
 	Keyboard            Controls
-	Controller          Controller
+	Controllers         []Controller
 	MenuUpPressed       bool
 	MenuDownPressed     bool
 	ConfirmPressed      bool
@@ -82,7 +82,7 @@ func Run(config Config, loop Loop) {
 		previousPause = pause
 
 		state.Keyboard = readKeyboard(window)
-		state.Controller = readController()
+		state.Controllers = readControllers()
 		loop(&state)
 		window.SwapBuffers()
 		glfw.PollEvents()

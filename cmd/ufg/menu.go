@@ -6,8 +6,8 @@ import (
 	"github.com/andrlzpt/ufg/internal/window"
 )
 
-var titleOptions = []string{"one player", "two players", "difficulty", "arena options"}
-var pauseOptions = []string{"resume", "restart", "main menu"}
+var titleOptions = []string{"one player", "two players", "difficulty", "arena options", "controls"}
+var pauseOptions = []string{"resume", "restart", "controls", "main menu"}
 var resultOptions = []string{"rematch", "main menu"}
 var difficultyOptions = []string{"easy", "normal", "hard", "back"}
 var victoryOptions = []string{"continue", "rematch", "main menu"}
@@ -15,6 +15,10 @@ var retryOptions = []string{"retry", "main menu"}
 var championshipOptions = []string{"new championship", "main menu"}
 
 func currentMenu(app *AppState) (string, []string) {
+	if app.ControlsMenu {
+		return "controls", controlsMenuOptions(app)
+	}
+
 	if app.Screen == ScreenMain {
 		if app.ArenaMenu {
 			return "arena options", []string{
@@ -59,6 +63,12 @@ func drawAppMenu(text *ascii.Buffer, app *AppState) {
 
 	drawCenteredText(text, text.Height/2-3, title)
 
+	if app.Screen == ScreenArena &&
+		!app.Match.Over() &&
+		app.MissingDevice != "" {
+		drawCenteredText(text, text.Height/2-5, app.MissingDevice)
+	}
+
 	for i, label := range options {
 		prefix := "  "
 		if i == app.MenuItem {
@@ -69,10 +79,11 @@ func drawAppMenu(text *ascii.Buffer, app *AppState) {
 		ascii.DrawText(text, x, y, prefix+label)
 	}
 
-	drawCenteredText(
-		text, text.Height-2,
-		"arrows + enter or mouse click",
-	)
+	hint := "arrows + enter or mouse click"
+	if app.ControlsMenu {
+		hint = "enter/click cycles device; shared device swaps"
+	}
+	drawCenteredText(text, text.Height-2, hint)
 }
 
 // handleMenus reports whether this frame belongs to menu interaction.
@@ -81,6 +92,10 @@ func handleMenus(
 	app *AppState,
 	text *ascii.Buffer,
 ) bool {
+	if state.PausePressed && app.ControlsMenu {
+		closeControlsMenu(app)
+		return true
+	}
 
 	if state.PausePressed &&
 		app.Screen == ScreenMain && app.ArenaMenu {
@@ -99,8 +114,13 @@ func handleMenus(
 	if state.PausePressed && app.Screen == ScreenArena {
 		if app.Match.Over() {
 			returnToMain(app)
+		} else if app.Paused {
+			if app.MissingDevice == "" {
+				app.Paused = false
+				app.MenuItem = 0
+			}
 		} else {
-			app.Paused = !app.Paused
+			app.Paused = true
 			app.MenuItem = 0
 		}
 		return true
@@ -151,6 +171,15 @@ func handleMenus(
 }
 
 func activateMenuItem(app *AppState) {
+	if app.ControlsMenu {
+		switch app.MenuItem {
+		case 0, 1:
+			cycleControlDevice(app, app.MenuItem)
+		case 2:
+			closeControlsMenu(app)
+		}
+		return
+	}
 
 	if app.Screen == ScreenMain {
 		if app.ArenaMenu {
@@ -191,6 +220,9 @@ func activateMenuItem(app *AppState) {
 		case 3:
 			app.ArenaMenu = true
 			app.MenuItem = 0
+		case 4:
+			app.ControlsMenu = true
+			app.MenuItem = 0
 		}
 		return
 	}
@@ -223,10 +255,15 @@ func activateMenuItem(app *AppState) {
 
 	switch app.MenuItem {
 	case 0:
-		app.Paused = false
+		if app.MissingDevice == "" {
+			app.Paused = false
+		}
 	case 1:
 		startMatch(app)
 	case 2:
+		app.ControlsMenu = true
+		app.MenuItem = 0
+	case 3:
 		returnToMain(app)
 	}
 }
@@ -237,6 +274,7 @@ func returnToMain(app *AppState) {
 	app.MenuItem = int(app.Mode)
 	app.DifficultyMenu = false
 	app.ArenaMenu = false
+	app.ControlsMenu = false
 }
 
 func matchResultMenu(match *game.Match) (string, []string) {
