@@ -63,53 +63,22 @@ func drawMatchHUD(
 	match *game.Match,
 	showBreak bool,
 ) {
-	const hudStartRow = ((arenaDepth+1)*blockCellHeight +
-		textCellHeight - 1) / textCellHeight
-
-	if match.Machine != nil {
-		drawCenteredText(text, hudStartRow, fmt.Sprintf(
-			"bout %d/%d - %s",
-			match.Bout,
-			match.TotalBouts,
-			match.Opponent.Name,
-		))
-
-		drawCenteredText(
-			text,
-			hudStartRow+1,
-			"difficulty: "+game.DifficultyName(match.Machine.Difficulty),
-		)
-	} else {
-		drawCenteredText(text, hudStartRow, "two players")
+	if !showBreak || match.BreakRemaining <= 0 || match.Over() {
+		return
 	}
 
-	drawCenteredText(text, hudStartRow+2, fmt.Sprintf(
-		"round %d/%d - %ds",
-		match.Round,
-		match.Config.Rounds,
-		int(math.Ceil(match.Remaining)),
-	))
-
-	drawCenteredText(text, hudStartRow+3, fmt.Sprintf(
-		"player 1: %d    player 2: %d",
-		match.Left.Score,
-		match.Right.Score,
-	))
-
-	if showBreak && match.BreakRemaining > 0 && !match.Over() {
-		drawCenteredText(
-			text,
-			text.Height/2,
-			"round over. get ready.",
-		)
-		drawCenteredText(
-			text,
-			text.Height/2+2,
-			fmt.Sprintf(
-				"round %d starts in %d",
-				match.Round,
-				int(math.Ceil(match.BreakRemaining)),
-			),
-		)
-	}
+	drawCenteredText(
+		text,
+		text.Height/2,
+		"round over. get ready.",
+	)
+	drawCenteredText(
+		text,
+		text.Height/2+2,
+		fmt.Sprintf(
+			"round %d starts in %d",
+			match.Round,
+			int(math.Ceil(match.BreakRemaining)),
+		),
+	)
 }

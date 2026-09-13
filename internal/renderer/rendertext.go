@@ -16,14 +16,50 @@ func RenderText(buffer *ascii.Buffer, config Config) {
 		for x := 0; x < buffer.Width; x++ {
 			r := buffer.At(x, y)
 			if r != ' ' {
-				drawTextGlyph(x, y, r, config)
+				drawTextGlyph(x, y, r, config, nil)
 			}
 		}
 	}
 	gl.End()
 }
 
-func drawTextGlyph(cellX, cellY int, r rune, config Config) {
+// RenderTextLine draws a centered label at pixel coordinates.
+// quarterTurns: 0 horizontal, 1 clockwise, -1 counterclockwise.
+func RenderTextLine(
+	label string,
+	centerX, centerY float32,
+	quarterTurns int,
+	config Config,
+) {
+	runes := []rune(label)
+	width := float32(len(runes) * config.CellWidth)
+	height := float32(config.CellHeight)
+
+	transform := func(x, y float32) (float32, float32) {
+		x -= width / 2
+		y -= height / 2
+
+		switch quarterTurns {
+		case 1:
+			x, y = -y, x
+		case -1:
+			x, y = y, -x
+		}
+
+		return centerX + x, centerY + y
+	}
+
+	gl.Color3f(1, 1, 1)
+	gl.Begin(gl.QUADS)
+	for x, r := range runes {
+		if r != ' ' {
+			drawTextGlyph(x, 0, r, config, transform)
+		}
+	}
+	gl.End()
+}
+
+func drawTextGlyph(cellX, cellY int, r rune, config Config, transform func(float32, float32) (float32, float32)) {
 	face := basicfont.Face7x13
 	baseline := fixed.P(0, face.Ascent)
 	bounds, mask, maskPoint, _, ok := face.Glyph(baseline, r)
@@ -47,15 +83,17 @@ func drawTextGlyph(cellX, cellY int, r rune, config Config) {
 
 			pixelX := originX + float32(x)*scaleX
 			pixelY := originY + float32(y)*scaleY
-			left := pixelToClipX(pixelX, config)
-			right := pixelToClipX(pixelX+scaleX, config)
-			top := pixelToClipY(pixelY, config)
-			bottom := pixelToClipY(pixelY+scaleY, config)
+			vertex := func(x, y float32) {
+				if transform != nil {
+					x, y = transform(x, y)
+				}
+				gl.Vertex2f(pixelToClipX(x, config), pixelToClipY(y, config))
+			}
 
-			gl.Vertex2f(left, top)
-			gl.Vertex2f(right, top)
-			gl.Vertex2f(right, bottom)
-			gl.Vertex2f(left, bottom)
+			vertex(pixelX, pixelY)
+			vertex(pixelX+scaleX, pixelY)
+			vertex(pixelX+scaleX, pixelY+scaleY)
+			vertex(pixelX, pixelY+scaleY)
 		}
 	}
 }

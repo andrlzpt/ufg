@@ -205,7 +205,7 @@ func (m *Match) collectItems() {
 			case ItemBonusPoint, ItemSwapScores:
 				if itemTouchesBody(item, player) {
 					if item.Kind == ItemBonusPoint {
-						player.Score += 10
+						player.Score += BonusItemPoints
 					} else {
 						m.Left.Score, m.Right.Score =
 							m.Right.Score, m.Left.Score

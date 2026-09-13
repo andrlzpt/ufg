@@ -40,7 +40,7 @@ func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) boo
 	// Only this arm's own path causes a penalty.
 	// The player's other arm is deliberately ignored.
 	if gloveTouches(next, step, arm.hitsOwnPath) {
-		p.Score--
+		p.Score -= SelfHitPenalty
 		arm.BeginRetract()
 		return false
 	}
@@ -76,7 +76,7 @@ func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) boo
 
 		// Contact always blocks. Only a fresh hit awards a point.
 		if !target.Retracting && !arm.scoredArms[id] {
-			p.Score++
+			p.Score += ArmHitPoints
 			arm.scoredArms[id] = true
 		}
 		target.BeginRetract()

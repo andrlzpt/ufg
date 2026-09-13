@@ -195,7 +195,7 @@ func (m *Match) collectPellets() {
 			gloveTouches(center, step, func(cell Point) bool {
 				if m.Pellets[cell] {
 					delete(m.Pellets, cell)
-					player.Score++
+					player.Score += FeedPoints
 				}
 				return false
 			})
