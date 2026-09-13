@@ -21,6 +21,11 @@ const (
 	MatchDraw
 )
 
+const (
+	DefaultArmSpeed        = 45.0
+	DefaultRetractspeedMul = 2
+)
+
 type Match struct {
 	Config         MatchConfig
 	Left           Player
@@ -68,13 +73,13 @@ func NewMatch(config MatchConfig, left, right Player) Match {
 	if config.ArmSpeed <= 0 ||
 		math.IsNaN(config.ArmSpeed) ||
 		math.IsInf(config.ArmSpeed, 0) {
-		config.ArmSpeed = 30
+		config.ArmSpeed = DefaultArmSpeed
 	}
 
 	if config.RetractSpeedMul <= 0 ||
 		math.IsNaN(config.RetractSpeedMul) ||
 		math.IsInf(config.RetractSpeedMul, 0) {
-		config.RetractSpeedMul = 1.5
+		config.RetractSpeedMul = DefaultRetractspeedMul
 	}
 
 	m := Match{

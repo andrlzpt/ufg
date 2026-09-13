@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/andrlzpt/ufg/internal/ascii"
@@ -75,8 +77,8 @@ func main() {
 			Rounds:          3,
 			RoundDuration:   60,
 			RoundBreak:      5,
-			ArmSpeed:        30,
-			RetractSpeedMul: 2,
+			ArmSpeed:        game.DefaultArmSpeed,
+			RetractSpeedMul: game.DefaultRetractspeedMul,
 			MazeEnabled:     true,
 			FeedEnabled:     true,
 		},
@@ -88,7 +90,7 @@ func main() {
 	}
 
 	commands := make(chan terminal.Command, 16)
-	fmt.Println("Type 'go arena' to enter the arena; 'go main' to return.")
+	fmt.Println("Command: speed [number]")
 	go func() {
 		if err := terminal.ReadCommands(os.Stdin, commands); err != nil {
 			fmt.Fprintln(os.Stderr, "reading commands:", err)
@@ -212,45 +214,35 @@ func handleCommand(command terminal.Command, app *AppState) {
 		return
 	}
 
-	if fields[0] == "difficulty" {
+	if fields[0] == "speed" {
 		if len(fields) == 1 {
-			fmt.Println(
-				"Selected difficulty:",
-				game.DifficultyName(app.Difficulty),
-			)
+			fmt.Printf("Selected arm speed: %g cells/s\n", app.Config.ArmSpeed)
 
-			if app.Match.Machine != nil {
-				fmt.Println(
-					"Current match difficulty:",
-					game.DifficultyName(app.Match.Machine.Difficulty),
+			if app.Screen == ScreenArena {
+				fmt.Printf(
+					"Current match arm speed: %g cells/s\n",
+					app.Match.Config.ArmSpeed,
 				)
 			}
 			return
 		}
 
 		if len(fields) == 2 {
-			level := 0
-
-			switch strings.ToLower(fields[1]) {
-			case "easy", "1":
-				level = game.DifficultyEasy
-			case "normal", "2":
-				level = game.DifficultyNormal
-			case "hard", "3":
-				level = game.DifficultyHard
-			}
-
-			if level != 0 {
-				app.Difficulty = level
+			speed, err := strconv.ParseFloat(fields[1], 64)
+			if err == nil &&
+				speed > 0 &&
+				!math.IsNaN(speed) &&
+				!math.IsInf(speed, 0) {
+				app.Config.ArmSpeed = speed
 				fmt.Printf(
-					"Difficulty %s selected. Applies to the next match.\n",
-					game.DifficultyName(level),
+					"Arm speed %g cells/s. Applies to next match.\n",
+					speed,
 				)
 				return
 			}
 		}
 
-		fmt.Println("Use: difficulty easy|normal|hard")
+		fmt.Println("Use: speed <positive number>, e.g. speed 45")
 		return
 	}
 
@@ -265,5 +257,5 @@ func handleCommand(command terminal.Command, app *AppState) {
 		}
 	}
 
-	fmt.Println("Use: go arena, go main, or difficulty easy|normal|hard")
+	fmt.Println("Use: go arena, go main, or speed [number]")
 }
