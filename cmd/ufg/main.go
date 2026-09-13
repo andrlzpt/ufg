@@ -48,6 +48,7 @@ type AppState struct {
 	Paused         bool
 	Difficulty     int
 	DifficultyMenu bool
+	ArenaMenu      bool
 }
 
 func main() {
@@ -72,6 +73,8 @@ func main() {
 			RoundBreak:      5,
 			ArmSpeed:        30,
 			RetractSpeedMul: 2,
+			MazeEnabled:     true,
+			FeedEnabled:     true,
 		},
 		Championship: game.NewChampionship(),
 		Difficulty:   game.DifficultyEasy,
@@ -119,11 +122,13 @@ func main() {
 				rightInput = playerInput(state.Controller.Controls)
 			}
 
-			arena := game.Bounds{
-				MinX: arenaDepth + 1,
-				MinY: arenaDepth + 1,
-				MaxX: blocks.Width - arenaDepth - 2,
-				MaxY: blocks.Height - arenaDepth - 2,
+			arena := game.Arena{
+				Bounds: game.Bounds{
+					MinX: arenaDepth + 1,
+					MinY: arenaDepth + 1,
+					MaxX: blocks.Width - arenaDepth - 2,
+					MaxY: blocks.Height - arenaDepth - 2,
+				},
 			}
 
 			minY := float64(arena.MinY)
@@ -141,6 +146,7 @@ func main() {
 					app.MenuItem = 0
 				}
 			}
+			drawArenaFeatures(blocks, match, arena)
 			drawItems(blocks, match.Items)
 			drawPlayer(blocks, &match.Left, false)
 			drawPlayer(blocks, &match.Right, true)
@@ -150,7 +156,7 @@ func main() {
 			if !showMenu {
 				drawCenteredText(
 					text, 7,
-					"S speed | D extra hit | + point | X swap",
+					"S speed | D extra hit | +10 bonus | X swap",
 				)
 			}
 

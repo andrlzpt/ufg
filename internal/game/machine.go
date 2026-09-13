@@ -60,7 +60,7 @@ func (m *Machine) Reset() {
 func (m *Machine) Next(
 	self, opponent *Player,
 	deltaTime, minY, maxY float64,
-	arena Bounds,
+	arena Arena,
 	config MatchConfig,
 ) Input {
 	if deltaTime <= 0 || opponent == nil || self.MatchOver(opponent) {
@@ -295,7 +295,7 @@ func machineNoseTarget(player *Player) Point {
 
 // machineDirection chooses a safe step toward the target.
 // This is local steering, not full route planning.
-func machineDirection(arm *Arm, target Point, bounds Bounds) Direction {
+func machineDirection(arm *Arm, target Point, bounds Arena) Direction {
 	tip := arm.Path[len(arm.Path)-1]
 
 	// Prefer continuing straight when distances tie.
@@ -322,7 +322,7 @@ func machineDirection(arm *Arm, target Point, bounds Bounds) Direction {
 		}
 
 		unsafe := gloveTouches(next, step, func(cell Point) bool {
-			return !bounds.Contains(cell) || arm.hitsOwnPath(cell)
+			return bounds.Blocked(cell) || arm.hitsOwnPath(cell)
 		})
 		if unsafe {
 			continue
@@ -383,7 +383,7 @@ func machineDefenseDirection(
 	self *Player,
 	id armID,
 	threatY float64,
-	arena Bounds,
+	arena Arena,
 ) Direction {
 	start := self.armStart(id)
 	forward := directionStep(self.forward())

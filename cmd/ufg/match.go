@@ -54,6 +54,7 @@ func startMatch(app *AppState) {
 	app.Paused = false
 	app.MenuItem = 0
 	app.DifficultyMenu = false
+	app.ArenaMenu = false
 
 }
 

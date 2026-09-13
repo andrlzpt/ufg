@@ -32,7 +32,7 @@ func (a *Arm) Start(start Point, direction Direction) {
 
 // Grow extends along the saved grid path.
 // No steering keeps the current direction. Direct reversal is ignored.
-func (a *Arm) Grow(input ArmInput, deltaTime, speed float64, bounds Bounds, resolveHit func(next, step Point) bool) {
+func (a *Arm) Grow(input ArmInput, deltaTime, speed float64, arena Arena, resolveHit func(next, step Point) bool) {
 	if !input.Held || a.Retracting || deltaTime <= 0 ||
 		len(a.Path) == 0 {
 		return
@@ -54,7 +54,7 @@ func (a *Arm) Grow(input ArmInput, deltaTime, speed float64, bounds Bounds, reso
 		}
 
 		outside := gloveTouches(next, step, func(cell Point) bool {
-			return !bounds.Contains(cell)
+			return arena.Blocked(cell)
 		})
 
 		if outside {

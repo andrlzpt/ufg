@@ -6,7 +6,7 @@ import (
 	"github.com/andrlzpt/ufg/internal/window"
 )
 
-var titleOptions = []string{"one player", "two players", "difficulty"}
+var titleOptions = []string{"one player", "two players", "difficulty", "arena options"}
 var pauseOptions = []string{"resume", "restart", "main menu"}
 var resultOptions = []string{"rematch", "main menu"}
 var difficultyOptions = []string{"easy", "normal", "hard", "back"}
@@ -16,6 +16,13 @@ var championshipOptions = []string{"new championship", "main menu"}
 
 func currentMenu(app *AppState) (string, []string) {
 	if app.Screen == ScreenMain {
+		if app.ArenaMenu {
+			return "arena options", []string{
+				"maze: " + enabledLabel(app.Config.MazeEnabled),
+				"feed: " + enabledLabel(app.Config.FeedEnabled),
+				"back",
+			}
+		}
 		if app.DifficultyMenu {
 			return "difficulty: " + game.DifficultyName(app.Difficulty),
 				difficultyOptions
@@ -74,6 +81,13 @@ func handleMenus(
 	app *AppState,
 	text *ascii.Buffer,
 ) bool {
+
+	if state.PausePressed &&
+		app.Screen == ScreenMain && app.ArenaMenu {
+		app.ArenaMenu = false
+		app.MenuItem = 3
+		return true
+	}
 
 	if state.PausePressed &&
 		app.Screen == ScreenMain && app.DifficultyMenu {
@@ -139,6 +153,18 @@ func handleMenus(
 func activateMenuItem(app *AppState) {
 
 	if app.Screen == ScreenMain {
+		if app.ArenaMenu {
+			switch app.MenuItem {
+			case 0:
+				app.Config.MazeEnabled = !app.Config.MazeEnabled
+			case 1:
+				app.Config.FeedEnabled = !app.Config.FeedEnabled
+			case 2:
+				app.ArenaMenu = false
+				app.MenuItem = 3
+			}
+			return
+		}
 		if app.DifficultyMenu {
 			if app.MenuItem == 3 {
 				app.DifficultyMenu = false
@@ -162,6 +188,9 @@ func activateMenuItem(app *AppState) {
 		case 2:
 			app.DifficultyMenu = true
 			app.MenuItem = app.Difficulty - 1
+		case 3:
+			app.ArenaMenu = true
+			app.MenuItem = 0
 		}
 		return
 	}
@@ -207,6 +236,7 @@ func returnToMain(app *AppState) {
 	app.Paused = false
 	app.MenuItem = int(app.Mode)
 	app.DifficultyMenu = false
+	app.ArenaMenu = false
 }
 
 func matchResultMenu(match *game.Match) (string, []string) {
@@ -240,4 +270,11 @@ func matchResultMenu(match *game.Match) (string, []string) {
 	}
 
 	return message, victoryOptions
+}
+
+func enabledLabel(enabled bool) string {
+	if enabled {
+		return "on"
+	}
+	return "off"
 }

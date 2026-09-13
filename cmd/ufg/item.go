@@ -14,7 +14,7 @@ func drawItems(buffer *ascii.Buffer, items []game.Item) {
 			symbol = 'S'
 		case game.ItemDoublePunches:
 			symbol = 'D'
-		case game.ItemPoint:
+		case game.ItemBonusPoint:
 			symbol = '+'
 		case game.ItemSwapScores:
 			symbol = 'X'
