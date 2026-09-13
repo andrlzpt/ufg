@@ -10,9 +10,20 @@ type Controls struct {
 	RightPunch bool
 }
 
+type MenuControls struct {
+	Up      bool
+	Down    bool
+	Confirm bool
+	Back    bool
+	Pause   bool
+	StickY  float32
+}
+
 type Controller struct {
-	Connected bool
-	Controls  Controls
+	ID       int
+	Name     string
+	Controls Controls
+	Menu     MenuControls
 }
 
 func readKeyboard(w *glfw.Window) Controls {
@@ -38,15 +49,18 @@ func readKeyboard(w *glfw.Window) Controls {
 	return controls
 }
 
-func readController() Controller {
+func readControllers() []Controller {
+	var controllers []Controller
+
 	for id := glfw.Joystick1; id <= glfw.JoystickLast; id++ {
 		state := id.GetGamepadState()
 		if state == nil {
 			continue
 		}
 
-		return Controller{
-			Connected: true,
+		controllers = append(controllers, Controller{
+			ID:   int(id),
+			Name: id.GetGamepadName(),
 			Controls: Controls{
 				MoveY:      axisValue(state.Axes[glfw.AxisLeftY]),
 				SteerX:     axisValue(state.Axes[glfw.AxisRightX]),
@@ -54,11 +68,18 @@ func readController() Controller {
 				LeftPunch:  state.Buttons[glfw.ButtonLeftBumper] == glfw.Press,
 				RightPunch: state.Buttons[glfw.ButtonRightBumper] == glfw.Press,
 			},
-		}
+			Menu: MenuControls{
+				Up:      state.Buttons[glfw.ButtonDpadUp] == glfw.Press,
+				Down:    state.Buttons[glfw.ButtonDpadDown] == glfw.Press,
+				Confirm: state.Buttons[glfw.ButtonA] == glfw.Press,
+				Back:    state.Buttons[glfw.ButtonB] == glfw.Press,
+				Pause:   state.Buttons[glfw.ButtonStart] == glfw.Press,
+				StickY:  state.Axes[glfw.AxisLeftY],
+			},
+		})
 	}
 
-	// Fresh zero state clears controls when unplugged.
-	return Controller{}
+	return controllers
 }
 
 // Ignore small stick drift. Rescale remaining travel to reach ±1.

@@ -49,6 +49,10 @@ type AppState struct {
 	Difficulty     int
 	DifficultyMenu bool
 	ArenaMenu      bool
+	Controls       ControlConfig
+	ControlsMenu   bool
+	Controllers    []window.Controller
+	MissingDevice  string
 }
 
 func main() {
@@ -78,6 +82,9 @@ func main() {
 		},
 		Championship: game.NewChampionship(),
 		Difficulty:   game.DifficultyEasy,
+		Controls: ControlConfig{
+			Devices: [2]int{keyboardDevice, 0},
+		},
 	}
 
 	commands := make(chan terminal.Command, 16)
@@ -91,8 +98,24 @@ func main() {
 	window.Run(window.Config{
 		Width: windowWidth, Height: windowHeight, Title: "untitled fighting game",
 	}, func(state *window.State) {
+		app.Controllers = state.Controllers
 		handleCommands(commands, &app)
+
+		_, _, app.MissingDevice = matchInputs(state, &app)
+
+		if app.Screen == ScreenArena &&
+			!app.Match.Over() &&
+			app.MissingDevice != "" &&
+			!app.Paused {
+			app.Paused = true
+			app.MenuItem = 2 // Controls.
+		}
+
 		menuFrame := handleMenus(state, &app, text)
+
+		// Menu selection may have changed mode or device assignments.
+		leftInput, rightInput, missingDevice := matchInputs(state, &app)
+		app.MissingDevice = missingDevice
 
 		blocks.Clear()
 		text.Clear()
@@ -113,15 +136,6 @@ func main() {
 				arenaDepth,
 			)
 
-			leftInput := playerInput(state.Keyboard)
-			rightInput := game.Input{}
-
-			missingController := false
-			if app.Mode == ModeTwoPlayers {
-				missingController = !state.Controller.Connected
-				rightInput = playerInput(state.Controller.Controls)
-			}
-
 			arena := game.Arena{
 				Bounds: game.Bounds{
 					MinX: arenaDepth + 1,
@@ -136,7 +150,7 @@ func main() {
 			match := &app.Match
 
 			if !menuFrame && !app.Paused &&
-				!match.Over() && !missingController {
+				!match.Over() && missingDevice == "" {
 				match.Update(
 					leftInput, rightInput,
 					state.DeltaTime, minY, maxY, arena,
@@ -152,7 +166,7 @@ func main() {
 			drawPlayer(blocks, &match.Right, true)
 
 			showMenu := app.Paused || match.Over()
-			drawMatchHUD(text, match, !showMenu && !missingController)
+			drawMatchHUD(text, match, !showMenu && missingDevice == "")
 
 			if showMenu {
 				drawAppMenu(text, &app)
@@ -168,7 +182,7 @@ func main() {
 				&app.Match,
 				textConfig,
 				!app.Paused && !app.Match.Over(),
-				app.Mode == ModeTwoPlayers && !state.Controller.Connected,
+				app.Mode == ModeTwoPlayers && app.MissingDevice != "",
 			)
 		}
 	})

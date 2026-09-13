@@ -12,13 +12,14 @@ type State struct {
 	ElapsedTime         float64
 	FrameCount          uint64
 	Keyboard            Controls
-	Controller          Controller
+	Controllers         []Controller
 	MenuUpPressed       bool
 	MenuDownPressed     bool
 	ConfirmPressed      bool
 	MousePressed        bool
 	MouseMoved          bool
 	PausePressed        bool
+	BackPressed         bool
 }
 
 type Config struct {
@@ -47,6 +48,7 @@ func Run(config Config, loop Loop) {
 	})
 
 	var previousUp, previousDown, previousConfirm, previousMouse, previousPause bool
+	controllerMenus := controllerMenuTracker{}
 	lastTime := glfw.GetTime()
 
 	for !window.ShouldClose() {
@@ -74,6 +76,7 @@ func Run(config Config, loop Loop) {
 		state.ConfirmPressed = confirm && !previousConfirm
 		state.MousePressed = mouse && !previousMouse
 		state.PausePressed = pause && !previousPause
+		state.BackPressed = false
 
 		previousUp = up
 		previousDown = down
@@ -82,7 +85,9 @@ func Run(config Config, loop Loop) {
 		previousPause = pause
 
 		state.Keyboard = readKeyboard(window)
-		state.Controller = readController()
+		state.Controllers = readControllers()
+		controllerMenus.addPresses(&state)
+
 		loop(&state)
 		window.SwapBuffers()
 		glfw.PollEvents()
