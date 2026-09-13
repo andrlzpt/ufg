@@ -1,6 +1,8 @@
 package game
 
-import "math"
+import (
+	"math"
+)
 
 type Machine struct {
 	Difficulty int
@@ -23,6 +25,13 @@ type Machine struct {
 	timeScale       float64
 }
 
+// Time limits in seconds at DefaultArmSpeed.
+const (
+	machineDefenseTimeout = 1.0
+	machineStuckTimeout   = 0.4
+	machinePunchTimeout   = 16.0 / 3.0
+)
+
 func (m *Machine) Reset() {
 	difficulty := max(
 		DifficultyEasy,
@@ -32,10 +41,10 @@ func (m *Machine) Reset() {
 	speed := m.armSpeed
 
 	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
-		speed = 30
+		speed = DefaultArmSpeed
 	}
 
-	scale := 30 / speed
+	scale := DefaultArmSpeed / speed
 	skill := OpponentMachineConfig(difficulty, opponent)
 
 	skill.ReactionDelay *= scale
@@ -117,7 +126,7 @@ func (m *Machine) Next(
 
 	// Stop controlling a defense that was hit or is no longer needed.
 	if m.defending &&
-		(defense.Retracting || !danger || m.defenseTime >= 1.5*m.timeScale) {
+		(defense.Retracting || !danger || m.defenseTime >= machineDefenseTimeout*m.timeScale) {
 		m.defending = false
 		m.stuckTime = 0
 	}
@@ -167,7 +176,7 @@ func (m *Machine) Next(
 	extended := len(attack.Path) > 0
 
 	if extended {
-		if m.stuckTime >= 0.6*m.timeScale || m.punchTime >= 8*m.timeScale {
+		if m.stuckTime >= machineStuckTimeout*m.timeScale || m.punchTime >= machinePunchTimeout*m.timeScale {
 			return m.input // Release attack.
 		}
 

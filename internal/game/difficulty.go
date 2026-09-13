@@ -32,33 +32,33 @@ type MachineConfig struct {
 	AttackPauseMax    float64
 }
 
-// Times are baseline seconds at 30 cells per second.
+// Times are baseline seconds at DefaultArmSpeed (45 cells/s).
 // Machine.Reset scales them to the match's arm speed.
 func DifficultyConfig(level int) MachineConfig {
 	switch level {
 	case DifficultyNormal:
 		return MachineConfig{
-			ReactionDelay:     0.15,
+			ReactionDelay:     0.10,
 			MissThreatChance:  0.15,
-			PredictionSeconds: 0.90,
-			AttackPauseMin:    0.60,
-			AttackPauseMax:    1.00,
+			PredictionSeconds: 0.60,
+			AttackPauseMin:    0.40,
+			AttackPauseMax:    2.0 / 3.0,
 		}
 	case DifficultyHard:
 		return MachineConfig{
-			ReactionDelay:     0.075,
+			ReactionDelay:     0.05,
 			MissThreatChance:  0.05,
-			PredictionSeconds: 1.20,
-			AttackPauseMin:    0.30,
-			AttackPauseMax:    0.60,
+			PredictionSeconds: 0.80,
+			AttackPauseMin:    0.20,
+			AttackPauseMax:    0.40,
 		}
 	default:
 		return MachineConfig{
-			ReactionDelay:     0.25,
+			ReactionDelay:     1.0 / 6.0,
 			MissThreatChance:  0.30,
-			PredictionSeconds: 0.60,
-			AttackPauseMin:    1.00,
-			AttackPauseMax:    1.50,
+			PredictionSeconds: 0.40,
+			AttackPauseMin:    2.0 / 3.0,
+			AttackPauseMax:    1.00,
 		}
 	}
 }
