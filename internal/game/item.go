@@ -12,7 +12,9 @@ const (
 )
 
 const (
-	itemSpawnInterval   = 6.0
+	powerSpawnInterval  = 3.0
+	scoreSpawnInterval  = 6.0
+	maxPowerItems       = 6
 	itemLifetime        = 12.0
 	doubleSpeedDuration = 5.0
 )
@@ -45,43 +47,53 @@ func (m *Match) tickItems(deltaTime float64, arena Arena) {
 	}
 	m.Items = alive
 
-	m.spawnTimer -= deltaTime
-	if m.spawnTimer > 0 {
-		return
-	}
-	m.spawnTimer = itemSpawnInterval
+	m.powerSpawnTimer -= deltaTime
+	if m.powerSpawnTimer <= 0 {
+		m.powerSpawnTimer += powerSpawnInterval
 
-	// Zone 0: between the two 15-cell-wide player sprites.
-	m.spawnItem(
-		0,
-		ItemKind(rand.IntN(2)),
-		max(arena.MinX+1, int(m.Left.X)+16),
-		min(arena.MaxX-1, int(m.Right.X)-2),
-		arena.MinY+2,
-		arena.MaxY-2,
-	)
-
-	// Zones 1 and 2: reachable body lanes.
-	// Use the same score-item kind on both sides.
-	scoreKind := ItemBonusPoint
-	if rand.IntN(2) == 1 {
-		scoreKind = ItemSwapScores
-	}
-
-	for i, player := range [2]*Player{&m.Left, &m.Right} {
-		bodyX := int(player.X) + 2
-		if player.Facing == FacingLeft {
-			bodyX = int(player.X) + 12
+		// Random order avoids always favoring S when only one slot is free.
+		kinds := [2]ItemKind{ItemDoubleSpeed, ItemDoublePunches}
+		if rand.IntN(2) == 1 {
+			kinds[0], kinds[1] = kinds[1], kinds[0]
 		}
 
-		m.spawnItem(
-			i+1,
-			scoreKind,
-			bodyX,
-			bodyX,
-			arena.MinY+4,
-			arena.MaxY-4,
-		)
+		for _, kind := range kinds {
+			m.spawnItem(
+				0,
+				kind,
+				max(arena.MinX+1, int(m.Left.X)+16),
+				min(arena.MaxX-1, int(m.Right.X)-2),
+				arena.MinY+2,
+				arena.MaxY-2,
+			)
+		}
+	}
+
+	m.scoreSpawnTimer -= deltaTime
+	if m.scoreSpawnTimer <= 0 {
+		m.scoreSpawnTimer += scoreSpawnInterval
+
+		// Same score-item kind on both sides.
+		kind := ItemBonusPoint
+		if rand.IntN(2) == 1 {
+			kind = ItemSwapScores
+		}
+
+		for i, player := range [2]*Player{&m.Left, &m.Right} {
+			bodyX := int(player.X) + 2
+			if player.Facing == FacingLeft {
+				bodyX = int(player.X) + 12
+			}
+
+			m.spawnItem(
+				i+1,
+				kind,
+				bodyX,
+				bodyX,
+				arena.MinY+4,
+				arena.MaxY-4,
+			)
+		}
 	}
 }
 
@@ -94,11 +106,21 @@ func (m *Match) spawnItem(
 		return
 	}
 
-	// At most one item per zone.
+	// Six power items in the middle. One score item per player lane.
+	// Six power items in the middle. One score item per player lane.
+	limit := 1
+	if zone == 0 {
+		limit = maxPowerItems
+	}
+
+	count := 0
 	for _, item := range m.Items {
 		if item.zone == zone {
-			return
+			count++
 		}
+	}
+	if count >= limit {
+		return
 	}
 
 	for attempt := 0; attempt < 30; attempt++ {
