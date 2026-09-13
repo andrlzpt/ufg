@@ -69,7 +69,8 @@ func drawAppMenu(text *ascii.Buffer, app *AppState) {
 		return
 	}
 
-	drawCenteredText(text, text.Height/2-3, title)
+	x, _ := menuPosition(text, options, 0)
+	ascii.DrawText(text, x+2, text.Height/2-3, title)
 
 	if app.Screen == ScreenArena &&
 		!app.Match.Over() &&
