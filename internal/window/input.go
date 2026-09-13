@@ -10,10 +10,20 @@ type Controls struct {
 	RightPunch bool
 }
 
+type MenuControls struct {
+	Up      bool
+	Down    bool
+	Confirm bool
+	Back    bool
+	Pause   bool
+	StickY  float32
+}
+
 type Controller struct {
 	ID       int
 	Name     string
 	Controls Controls
+	Menu     MenuControls
 }
 
 func readKeyboard(w *glfw.Window) Controls {
@@ -57,6 +67,14 @@ func readControllers() []Controller {
 				SteerY:     axisValue(state.Axes[glfw.AxisRightY]),
 				LeftPunch:  state.Buttons[glfw.ButtonLeftBumper] == glfw.Press,
 				RightPunch: state.Buttons[glfw.ButtonRightBumper] == glfw.Press,
+			},
+			Menu: MenuControls{
+				Up:      state.Buttons[glfw.ButtonDpadUp] == glfw.Press,
+				Down:    state.Buttons[glfw.ButtonDpadDown] == glfw.Press,
+				Confirm: state.Buttons[glfw.ButtonA] == glfw.Press,
+				Back:    state.Buttons[glfw.ButtonB] == glfw.Press,
+				Pause:   state.Buttons[glfw.ButtonStart] == glfw.Press,
+				StickY:  state.Axes[glfw.AxisLeftY],
 			},
 		})
 	}

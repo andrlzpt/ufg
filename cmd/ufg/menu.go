@@ -45,14 +45,22 @@ func currentMenu(app *AppState) (string, []string) {
 	return "", nil
 }
 
-// menuPosition uses the same coordinates for drawing and mouse hit areas.
+func menuWidth(options []string) int {
+	width := 0
+	for _, label := range options {
+		width = max(width, len([]rune(label))+2)
+	}
+	return width
+}
+
+// Shared layout for drawing and mouse hit areas.
 func menuPosition(
 	text *ascii.Buffer,
-	label string,
+	options []string,
 	item int,
 ) (int, int) {
-	width := len([]rune(label)) + 2
-	return (text.Width - width) / 2, text.Height/2 + item*2
+	return (text.Width - menuWidth(options)) / 2,
+		text.Height/2 + item*2
 }
 
 func drawAppMenu(text *ascii.Buffer, app *AppState) {
@@ -75,13 +83,13 @@ func drawAppMenu(text *ascii.Buffer, app *AppState) {
 			prefix = "> "
 		}
 
-		x, y := menuPosition(text, label, i)
+		x, y := menuPosition(text, options, i)
 		ascii.DrawText(text, x, y, prefix+label)
 	}
 
-	hint := "arrows + enter or mouse click"
+	hint := "arrows/stick: move | enter/A: select | B: back"
 	if app.ControlsMenu {
-		hint = "enter/click cycles device; shared device swaps"
+		hint = "enter/A/click: change device | esc/B: back"
 	}
 	drawCenteredText(text, text.Height-2, hint)
 }
@@ -92,30 +100,24 @@ func handleMenus(
 	app *AppState,
 	text *ascii.Buffer,
 ) bool {
-	if state.PausePressed && app.ControlsMenu {
-		closeControlsMenu(app)
+	if state.BackPressed && menuBack(app) {
 		return true
 	}
 
-	if state.PausePressed &&
-		app.Screen == ScreenMain && app.ArenaMenu {
-		app.ArenaMenu = false
-		app.MenuItem = 3
-		return true
-	}
+	if state.PausePressed {
+		if app.Screen == ScreenMain {
+			menuBack(app)
+			return true
+		}
 
-	if state.PausePressed &&
-		app.Screen == ScreenMain && app.DifficultyMenu {
-		app.DifficultyMenu = false
-		app.MenuItem = 2
-		return true
-	}
-
-	if state.PausePressed && app.Screen == ScreenArena {
 		if app.Match.Over() {
 			returnToMain(app)
-		} else if app.Paused {
+			return true
+		}
+
+		if app.Paused {
 			if app.MissingDevice == "" {
+				app.ControlsMenu = false
 				app.Paused = false
 				app.MenuItem = 0
 			}
@@ -142,9 +144,9 @@ func handleMenus(
 
 	hovered := -1
 	if state.IsMouseInsideWindow {
-		for i, label := range options {
-			x, y := menuPosition(text, label, i)
-			width := len([]rune(label)) + 2
+		for i := range options {
+			x, y := menuPosition(text, options, i)
+			width := menuWidth(options)
 
 			left := float64(x * textCellWidth)
 			top := float64(y * textCellHeight)
@@ -165,6 +167,35 @@ func handleMenus(
 
 	if state.ConfirmPressed || (state.MousePressed && hovered >= 0) {
 		activateMenuItem(app)
+	}
+
+	return true
+}
+
+func menuBack(app *AppState) bool {
+	switch {
+	case app.ControlsMenu:
+		closeControlsMenu(app)
+
+	case app.Screen == ScreenMain && app.ArenaMenu:
+		app.ArenaMenu = false
+		app.MenuItem = 3
+
+	case app.Screen == ScreenMain && app.DifficultyMenu:
+		app.DifficultyMenu = false
+		app.MenuItem = 2
+
+	case app.Screen == ScreenArena && app.Match.Over():
+		returnToMain(app)
+
+	case app.Screen == ScreenArena && app.Paused:
+		if app.MissingDevice == "" {
+			app.Paused = false
+			app.MenuItem = 0
+		}
+
+	default:
+		return false
 	}
 
 	return true
