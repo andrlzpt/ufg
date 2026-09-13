@@ -38,10 +38,11 @@ type Match struct {
 	Walls          map[Point]bool
 	Pellets        map[Point]bool
 
-	reachable  map[Point]bool
-	arenaReady bool
-	spawnTimer float64
-	spawn      [2]struct {
+	reachable       map[Point]bool
+	arenaReady      bool
+	powerSpawnTimer float64
+	scoreSpawnTimer float64
+	spawn           [2]struct {
 		X float64
 		Y float64
 	}
@@ -232,7 +233,8 @@ func (m *Match) resetPlayers(leftInput, rightInput Input) {
 	m.Walls = nil
 	m.Pellets = nil
 	m.reachable = nil
-	m.spawnTimer = itemSpawnInterval
+	m.powerSpawnTimer = powerSpawnInterval
+	m.scoreSpawnTimer = scoreSpawnInterval
 	if m.Machine != nil {
 		m.Machine.Reset()
 		rightInput = Input{}
