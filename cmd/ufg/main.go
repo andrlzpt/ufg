@@ -152,30 +152,25 @@ func main() {
 			drawPlayer(blocks, &match.Right, true)
 
 			showMenu := app.Paused || match.Over()
-			drawMatchHUD(text, match, !showMenu)
-			if !showMenu {
-				drawCenteredText(
-					text, 7,
-					"S speed | D extra hit | +10 bonus | X swap",
-				)
-			}
+			drawMatchHUD(text, match, !showMenu && !missingController)
 
 			if showMenu {
 				drawAppMenu(text, &app)
-			} else {
-				if missingController {
-					drawCenteredText(
-						text, 5,
-						"connect player two controller",
-					)
-				}
-				drawCenteredText(text, text.Height-2, "esc: pause")
 			}
 		}
 
 		renderer.BeginFrame(windowWidth, windowHeight)
 		renderer.RenderBlocks(blocks, blockConfig)
 		renderer.RenderText(text, textConfig)
+
+		if app.Screen == ScreenArena {
+			renderWallHUD(
+				&app.Match,
+				textConfig,
+				!app.Paused && !app.Match.Over(),
+				app.Mode == ModeTwoPlayers && !state.Controller.Connected,
+			)
+		}
 	})
 }
 
