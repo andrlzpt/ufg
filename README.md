@@ -15,7 +15,7 @@ go test ./...
 go run ./cmd/ufg
 ```
 
-## How to play (planned)
+## How to play
 
 Two players. One left. One right. Face each other.
 Top view, like Atari Boxing. Move up and down, like Pong.
@@ -29,39 +29,11 @@ Hit enemy arm. Get one point.
 All rounds done, no knockout? Most points wins.
 Round count, round time, and tie rule not picked yet.
 
-## Build steps
+Maze puts walls in arena. Glove hits wall, arm stops growing.
+Steer around wall. Or release punch to retract.
 
-1. Draw one player at rest. Body, head, two arms, two gloves.
-2. Draw second player. Opposite side. Face first player. Check both shapes.
-3. Add up/down movement. Keep players inside arena. No left/right movement.
-4. Add mode choice on title screen. One player fights machine. Two players fight each other.
-5. Define shared actions: move up/down, punch each arm, steer arm. Keyboard, joystick, and machine use same actions.
-6. Pick player one keys. Player two uses joystick. Map stick and two punch buttons. Pick arm steering controls. Handle missing or unplugged joystick.
-7. Make one arm grow along a grid while punch held. Save its path.
-8. Add steering. Arm turns like Snake while punch held.
-9. Release punch. Retract along saved path until arm rests again.
-10. Add same behavior to other arm and other player.
-11. Decide both-arms steering, movement during punch, and wall/self contact rules.
-12. Add nose and arm hit detection. Nose hit wins by knockout. Arm hit gives one point.
-13. Add rounds and score. Pick round count, round time, and tie rule. Most points wins when all rounds end.
-14. Add machine opponent for one player mode. Move, punch, steer, release. Same rules as human. Tune reaction time.
-15. Test one player against machine and two players with joystick. Tune speed, arm length, and controls.
+Feed puts dots in arena. Touch dot with glove. Get one point.
+Dot gone when collected. Dots come back each round.
 
-
-### Feature
-
-eventually we need to add: 
-
-item spawning. 
-
-two kinds of items:
-a. items to influence speed and quantity of punches allowed before retracting. We can start with these:
-    i. Double Speed
-    ii. Double Punches
-These items should be collected by glove contact and should be spawned in the area in the middle of both players.
-
-b. items to influence the score. We can start with these:
-    i. +1 point
-    ii. Reverse Score
-These items should be picked up by player's body. They spawn only in the players' area.
+Maze and Feed work together. Steer around walls. Eat dots. Punch enemy.
 

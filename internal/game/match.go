@@ -8,6 +8,8 @@ type MatchConfig struct {
 	RoundBreak      float64 // Seconds between rounds; zero skips break.
 	ArmSpeed        float64 // Cell per second.
 	RetractSpeedMul float64 // Retraction speed multiplier
+	MazeEnabled     bool
+	FeedEnabled     bool
 }
 
 type MatchResult int
@@ -33,7 +35,11 @@ type Match struct {
 	Bout           int // One-based championship bout.
 	TotalBouts     int
 	Items          []Item
+	Walls          map[Point]bool
+	Pellets        map[Point]bool
 
+	reachable  map[Point]bool
+	arenaReady bool
 	spawnTimer float64
 	spawn      [2]struct {
 		X float64
@@ -101,7 +107,7 @@ func (m *Match) Over() bool {
 func (m *Match) Update(
 	leftInput, rightInput Input,
 	deltaTime, minY, maxY float64,
-	arena Bounds,
+	arena Arena,
 ) {
 	if m.Over() || deltaTime <= 0 ||
 		math.IsNaN(deltaTime) || math.IsInf(deltaTime, 0) {
@@ -136,6 +142,12 @@ func (m *Match) Update(
 			continue
 		}
 
+		if !m.arenaReady {
+			m.prepareArena(arena.Bounds)
+		}
+
+		arena.Walls = m.Walls
+
 		step := min(deltaTime, maxStep, m.Remaining)
 
 		m.tickItems(step, arena)
@@ -157,6 +169,8 @@ func (m *Match) Update(
 
 		if !m.Left.MatchOver(&m.Right) {
 			m.collectItems()
+			m.collectPellets()
+
 		}
 
 		m.Remaining = max(0, m.Remaining-step)
@@ -214,6 +228,10 @@ func (m *Match) finishPoints() {
 // Held punch buttons must be released before punching again.
 func (m *Match) resetPlayers(leftInput, rightInput Input) {
 	m.Items = nil
+	m.arenaReady = false
+	m.Walls = nil
+	m.Pellets = nil
+	m.reachable = nil
 	m.spawnTimer = itemSpawnInterval
 	if m.Machine != nil {
 		m.Machine.Reset()

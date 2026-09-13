@@ -64,7 +64,7 @@ func (p *Player) Move(direction, deltaTime, minY, maxY float64) {
 
 // Update steers the last activated held arm.
 // Each released arm retracts independently.
-func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds, opponent *Player, config MatchConfig) {
+func (p *Player) Update(input Input, deltaTime, minY, maxY float64, bounds Arena, opponent *Player, config MatchConfig) {
 	if deltaTime <= 0 || p.MatchOver(opponent) {
 		return
 	}
@@ -104,7 +104,7 @@ func (p *Player) Update(input Input, deltaTime, minY, maxY float64, arena Bounds
 	}
 
 	// Paths are relative to the player's rendered position.
-	armBounds := arena.RelativeTo(int(p.X), int(p.Y))
+	armBounds := bounds.RelativeTo(int(p.X), int(p.Y))
 
 	// Retraction never waits for the other arm.
 	for id := leftArm; id <= rightArm; id++ {

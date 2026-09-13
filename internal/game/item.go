@@ -7,7 +7,7 @@ type ItemKind int
 const (
 	ItemDoubleSpeed ItemKind = iota
 	ItemDoublePunches
-	ItemPoint
+	ItemBonusPoint
 	ItemSwapScores
 )
 
@@ -32,7 +32,7 @@ func (item Item) Contains(cell Point) bool {
 		cell.Y <= item.Position.Y+2
 }
 
-func (m *Match) tickItems(deltaTime float64, arena Bounds) {
+func (m *Match) tickItems(deltaTime float64, arena Arena) {
 	m.Left.SpeedRemaining = max(0, m.Left.SpeedRemaining-deltaTime)
 	m.Right.SpeedRemaining = max(0, m.Right.SpeedRemaining-deltaTime)
 
@@ -63,7 +63,7 @@ func (m *Match) tickItems(deltaTime float64, arena Bounds) {
 
 	// Zones 1 and 2: reachable body lanes.
 	// Use the same score-item kind on both sides.
-	scoreKind := ItemPoint
+	scoreKind := ItemBonusPoint
 	if rand.IntN(2) == 1 {
 		scoreKind = ItemSwapScores
 	}
@@ -121,6 +121,16 @@ func (m *Match) spawnItem(
 
 // Avoid spawning underneath an existing player, arm, glove, or item.
 func (m *Match) itemSpaceFree(item Item) bool {
+	for y := item.Position.Y - 2; y <= item.Position.Y+2; y++ {
+		for x := item.Position.X - 1; x <= item.Position.X+1; x++ {
+			cell := Point{X: x, Y: y}
+
+			if m.Walls[cell] || !m.reachable[cell] {
+				return false
+			}
+		}
+	}
+
 	for _, other := range m.Items {
 		for y := item.Position.Y - 2; y <= item.Position.Y+2; y++ {
 			for x := item.Position.X - 1; x <= item.Position.X+1; x++ {
@@ -192,10 +202,10 @@ func (m *Match) collectItems() {
 					break
 				}
 
-			case ItemPoint, ItemSwapScores:
+			case ItemBonusPoint, ItemSwapScores:
 				if itemTouchesBody(item, player) {
-					if item.Kind == ItemPoint {
-						player.Score++
+					if item.Kind == ItemBonusPoint {
+						player.Score += 10
 					} else {
 						m.Left.Score, m.Right.Score =
 							m.Right.Score, m.Left.Score
