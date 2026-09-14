@@ -106,8 +106,7 @@ func (m *Match) spawnItem(
 		return
 	}
 
-	// Six power items in the middle. One score item per player lane.
-	// Six power items in the middle. One score item per player lane.
+	// Set max number of power items in the middle. One score item per player lane.
 	limit := 1
 	if zone == 0 {
 		limit = maxPowerItems
@@ -214,7 +213,7 @@ func (m *Match) collectItems() {
 					}
 
 					if item.Kind == ItemDoubleSpeed {
-						player.SpeedRemaining = doubleSpeedDuration
+						player.SpeedRemaining = DoubleSpeedDuration
 					} else {
 						arm.DoublePunches = true
 						arm.HitsRemaining++
