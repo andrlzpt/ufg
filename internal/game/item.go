@@ -14,7 +14,7 @@ const (
 const (
 	powerSpawnInterval  = 3.0
 	scoreSpawnInterval  = 6.0
-	maxPowerItems       = 6
+	maxPowerItems       = 12
 	itemLifetime        = 12.0
 	doubleSpeedDuration = 5.0
 )
