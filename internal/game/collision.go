@@ -78,6 +78,7 @@ func (p *Player) resolveArmHit(arm *Arm, opponent *Player, next, step Point) boo
 		if !target.Retracting && !arm.scoredArms[id] {
 			p.Score += ArmHitPoints
 			arm.scoredArms[id] = true
+			arm.HitsRemaining = max(0, arm.HitsRemaining-1)
 		}
 		target.BeginRetract()
 	}
