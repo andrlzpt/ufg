@@ -16,7 +16,7 @@ const (
 	scoreSpawnInterval  = 6.0
 	maxPowerItems       = 12
 	itemLifetime        = 12.0
-	doubleSpeedDuration = 5.0
+	DoubleSpeedDuration = 5.0
 )
 
 // Items occupy a 3-by-5-cell rectangle around Position.
